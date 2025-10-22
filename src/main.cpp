@@ -21,7 +21,6 @@ void testDelete()
 {
     SparseMatrix A;
     A.insert({1, 1, 1}, 2);
-
     assert(A.size() == 1);
     assert(A.insert({1, 1, 1}, 0) == true);
 
@@ -35,22 +34,22 @@ void testDelete()
     assert(B.size() == 5);
 
     // delete unique tuple that first index is the highest
-    assert(B.deleteNode({6, 5, 6}));
+    assert(B.erase({6, 5, 6}));
 
     B.assertFlatChildrenValues({{0, 10}, {1, 1}, {4, 4}, {5, 7}, {5, 2}, {6, 3}, {5, 5}, {6, 6}, {5, 8}, {6, 9}, {5, 11}, {6, 12}});
     B.assertFlatNodeValues({{0, 4, 0, 0}, {4, 1, 0, 0}, {5, 1, 0, 0}, {-1, 0, 1, 11}, {6, 1, 0, 0}, {7, 1, 0, 0}, {-1, 0, 1, 133}, {8, 1, 0, 0}, {9, 1, 0, 0}, {-1, 0, 1, 143}, {10, 1, 0, 0}, {11, 1, 0, 0}, {-1, 0, 1, 155}});
     assert(B.size() == 4);
 
-    assert(B.deleteNode({1, 5, 6}));
+    assert(B.erase({1, 5, 6}));
     assert(B.size() == 3);
 
-    assert(B.deleteNode({4, 5, 6}));
+    assert(B.erase({4, 5, 6}));
     assert(B.size() == 2);
 
-    assert(B.deleteNode({5, 5, 6}));
+    assert(B.erase({5, 5, 6}));
     assert(B.size() == 1);
 
-    assert(B.deleteNode({0, 5, 6}));
+    assert(B.erase({0, 5, 6}));
     assert(B.size() == 0);
     return;
 }

@@ -24,7 +24,7 @@ public:
 
     if (value == 0.0)
     {
-      return deleteNode(tuple);
+      return erase(tuple);
     }
 
     assert(tuple.size() > 0);
@@ -33,10 +33,10 @@ public:
     {
       // root is empty
       m_Nodes.push_back({0, false, 0, 0, 0});
-      insertNode(tuple, value);
+      put(tuple, value);
       return true;
     }
-    insertNode(tuple, value);
+    put(tuple, value);
     return true;
   }
 
@@ -56,7 +56,52 @@ public:
     m_Nodes.clear();
   }
 
-  void insertNode(const std::vector<int> &tuple, const double value)
+  bool erase(const std::vector<int> &tuple)
+  {
+    // we need to check if the tuple exists.
+    int tupleSize = static_cast<int>(tuple.size());
+    if (tupleSize == 0)
+    {
+      return false;
+    }
+
+    if (m_FlatChildren.size() == 0)
+    {
+      return false;
+    }
+    FlatNode *current = &m_Nodes[0];
+    SearchStatus status = none;
+    int flatChildrenPos = 0;
+    int node = -1;
+
+    std::vector<int> entries;
+    std::vector<int> visitedNodes;
+
+    entries.reserve(tupleSize);
+    visitedNodes.reserve(tupleSize + 1);
+
+    visitedNodes.push_back(0);
+
+    for (int i = 0; i < tupleSize; i++)
+    {
+      flatChildrenPos = this->findTheTuple(tuple[i], current->numChildren, current->childOffset, &status);
+      if (status != equal)
+      {
+        // not a match
+        return false;
+      }
+      node = m_FlatChildren[flatChildrenPos].nodeIndex;
+      current = &m_Nodes[node];
+      entries.push_back(flatChildrenPos);
+      visitedNodes.push_back(this->m_FlatChildren[flatChildrenPos].nodeIndex);
+    }
+
+    deleteTuple(entries, visitedNodes);
+    return true;
+  }
+
+private:
+  void put(const std::vector<int> &tuple, const double value)
   {
 
     int tupleSize = static_cast<int>(tuple.size());
@@ -130,50 +175,6 @@ public:
     }
   }
 
-  bool deleteNode(const std::vector<int> &tuple)
-  {
-    // we need to check if the tuple exists.
-    int tupleSize = static_cast<int>(tuple.size());
-    if (tupleSize == 0)
-    {
-      return false;
-    }
-
-    if (m_FlatChildren.size() == 0)
-    {
-      return false;
-    }
-    FlatNode *current = &m_Nodes[0];
-    SearchStatus status = none;
-    int flatChildrenPos = 0;
-    int node = -1;
-
-    std::vector<int> entries;
-    std::vector<int> visitedNodes;
-
-    entries.reserve(tupleSize);
-    visitedNodes.reserve(tupleSize + 1);
-
-    visitedNodes.push_back(0);
-
-    for (int i = 0; i < tupleSize; i++)
-    {
-      flatChildrenPos = this->findTheTuple(tuple[i], current->numChildren, current->childOffset, &status);
-      if (status != equal)
-      {
-        // not a match
-        return false;
-      }
-      node = m_FlatChildren[flatChildrenPos].nodeIndex;
-      current = &m_Nodes[node];
-      entries.push_back(flatChildrenPos);
-      visitedNodes.push_back(this->m_FlatChildren[flatChildrenPos].nodeIndex);
-    }
-
-    deleteTuple(entries, visitedNodes);
-    return true;
-  }
-
   int findMinIndex(const std::vector<bool> &zeroChildrenRemaining, const std::vector<int> nodePositions)
   {
     int min = m_Nodes.size();
@@ -208,7 +209,7 @@ public:
     return max;
   }
 
-  int findRemovedLinesBefore(const std::vector<int> &removed, int flatChildrenIndex)
+  int findRemovedFlatChildrenBefore(const std::vector<int> &removed, int flatChildrenIndex)
   {
     int ded = 0;
     for (const int line : removed)
@@ -221,7 +222,6 @@ public:
     return ded;
   }
 
-private:
   void deleteTuple(std::vector<int> &entries, std::vector<int> &visitedNodes)
   {
     int i = 0;
@@ -286,7 +286,7 @@ private:
       }
       else if (min < m_Nodes[i].childOffset && m_Nodes[i].childOffset <= maxD)
       {
-        int ded = findRemovedLinesBefore(entries, m_Nodes[i].childOffset);
+        int ded = findRemovedFlatChildrenBefore(entries, m_Nodes[i].childOffset);
         m_Nodes[i].childOffset -= ded;
       }
     }
