@@ -1,4 +1,4 @@
-#include "SparseEngine/DataNode.h"
+#include "SparseMatrix/SparseMatrix.h"
 #include <assert.h>
 #include <chrono>
 using namespace std;
@@ -8,11 +8,58 @@ using std::chrono::duration_cast;
 using std::chrono::high_resolution_clock;
 using std::chrono::milliseconds;
 
+void testInsert();
+void testDelete();
+
 int main()
+{
+    testInsert();
+    testDelete();
+}
+
+void testDelete()
+{
+    SparseMatrix A;
+    A.insert({1, 1, 1}, 2);
+
+    assert(A.size() == 1);
+    assert(A.insert({1, 1, 1}, 0) == true);
+
+    SparseMatrix B;
+    B.insert({1, 5, 6}, 11);
+    B.insert({6, 5, 6}, 13);
+    B.insert({4, 5, 6}, 133);
+    B.insert({5, 5, 6}, 143);
+    B.insert({0, 5, 6}, 155);
+
+    assert(B.size() == 5);
+
+    // delete unique tuple that first index is the highest
+    assert(B.deleteNode({6, 5, 6}));
+
+    B.assertFlatChildrenValues({{0, 10}, {1, 1}, {4, 4}, {5, 7}, {5, 2}, {6, 3}, {5, 5}, {6, 6}, {5, 8}, {6, 9}, {5, 11}, {6, 12}});
+    B.assertFlatNodeValues({{0, 4, 0, 0}, {4, 1, 0, 0}, {5, 1, 0, 0}, {-1, 0, 1, 11}, {6, 1, 0, 0}, {7, 1, 0, 0}, {-1, 0, 1, 133}, {8, 1, 0, 0}, {9, 1, 0, 0}, {-1, 0, 1, 143}, {10, 1, 0, 0}, {11, 1, 0, 0}, {-1, 0, 1, 155}});
+    assert(B.size() == 4);
+
+    assert(B.deleteNode({1, 5, 6}));
+    assert(B.size() == 3);
+
+    assert(B.deleteNode({4, 5, 6}));
+    assert(B.size() == 2);
+
+    assert(B.deleteNode({5, 5, 6}));
+    assert(B.size() == 1);
+
+    assert(B.deleteNode({0, 5, 6}));
+    assert(B.size() == 0);
+    return;
+}
+
+void testInsert()
 {
     auto t1 = high_resolution_clock::now();
 
-    DataNode A;
+    SparseMatrix A;
     A.insert({1, 5, 6}, 11.0);
 
     assert(A.getValue({1, 5, 6}) == 11.0);
@@ -67,7 +114,7 @@ int main()
     A.assertFlatNodeValues({{0, 5, 0, 0}, {5, 1, 0, 0}, {6, 1, 0, 0}, {-1, 0, 1, 11}, {7, 1, 0, 0}, {8, 1, 0, 0}, {-1, 0, 1, 13}, {9, 1, 0, 0}, {10, 1, 0, 0}, {-1, 0, 1, 133}, {11, 1, 0, 0}, {12, 1, 0, 0}, {-1, 0, 1, 143}, {13, 1, 0, 0}, {14, 1, 0, 0}, {-1, 0, 1, 155}});
 
     // First Index Match, Second Lower
-    DataNode B;
+    SparseMatrix B;
     B.insert({1, 5, 6}, 11.0);
     B.insert({6, 5, 6}, 13.0);
     B.insert({4, 5, 6}, 133.0);
@@ -108,7 +155,7 @@ int main()
     B.assertFlatNodeValues({{0, 3, 0, 0}, {3, 4, 0, 0}, {7, 1, 0, 0}, {-1, 0, 1, 11}, {8, 1, 0, 0}, {9, 1, 0, 0}, {-1, 0, 1, 13}, {10, 1, 0, 0}, {11, 1, 0, 0}, {-1, 0, 1, 133}, {12, 1, 0, 0}, {-1, 0, 1, 2}, {13, 1, 0, 0}, {-1, 0, 1, 7}, {14, 1, 0, 0}, {-1, 0, 1, 18}});
 
     // First two Indices Match
-    DataNode C;
+    SparseMatrix C;
     C.insert({1, 5, 6}, 11.0);
     C.insert({6, 5, 6}, 13.0);
     C.insert({4, 5, 6}, 133.0);
@@ -151,7 +198,7 @@ int main()
 
     // Auxiliary
 
-    DataNode D;
+    SparseMatrix D;
     D.insert({1, 5, 6}, 11.0);
     D.insert({6, 5, 6}, 13.0);
     D.insert({4, 5, 6}, 133.0);
@@ -201,7 +248,7 @@ int main()
                             {14, 1, 0, 0},
                             {-1, 0, 1, 66}});
 
-    DataNode K;
+    SparseMatrix K;
     int items = 0;
     for (int i = 0; i < 10000;)
     {
@@ -232,7 +279,7 @@ int main()
                 }
                 else
                 {
-                    overriden ++;
+                    overriden++;
                 }
                 K.insert({i, j, k}, 2);
                 j += 11;
@@ -253,6 +300,4 @@ int main()
     std::cout << ms_double.count() << "ms\n";
     std::cout << "Inserted " << items << " items." << std::endl;
     std::cout << "Overriden " << overriden << " items." << std::endl;
-
-    return 0;
 }
