@@ -7,5 +7,4 @@ compile:
 opt:
 	g++ -O2 main.cpp -o a.exe
 clean:
-	rm *.gch
-	rm nodes/*.gch
+	rm -f *.h.gch
