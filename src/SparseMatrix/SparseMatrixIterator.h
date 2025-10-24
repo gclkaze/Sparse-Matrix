@@ -43,7 +43,6 @@ public:
 
         while (true)
         {
-            // stack saves the visited FlatNodeEntry index
             currentNode = &(*m_Nodes)[visited->nodeIndex];
             if (currentNode->isLeaf)
             {
@@ -54,17 +53,18 @@ public:
                     childIndex = m_Stack[i];
                     m_Tuple.tuple.push_back((*m_Children)[childIndex].tupleIndex);
                 }
+                //add the branches value by adding the stored child offset to the current stacked child entry (that is the first child of the branch)
                 childIndex = m_Stack[stackSize - 1] + m_State[stackSize - 1];
                 m_Tuple.tuple.push_back((*m_Children)[childIndex].tupleIndex);
 
                 m_Tuple.value = currentNode->value;
                 m_Size--;
-                int last = m_State.size() - 1;
-                m_State[last]++;
+                m_State[stackSize - 1]++;
                 return m_Tuple;
             }
 
             visited = &(*m_Children)[currentNode->childOffset];
+            // stack saves the freshly visited FlatNodeEntry index
             m_Stack.push_back(currentNode->childOffset);
             m_ChildrenLimits.push_back(currentNode->numChildren);
             m_State.push_back(0);
@@ -105,8 +105,6 @@ private:
             assert(m_State.size() == m_Stack.size() && lastElem + 1 == (int)m_ChildrenLimits.size());
             if (m_State[lastElem] < m_ChildrenLimits[lastElem])
             {
-                // int lastElem = m_Stack.size() - 1;
-                assert(m_Stack.size() == m_State.size());
                 int entryIndex = m_Stack[lastElem];
                 int increment = m_State[lastElem];
                 return &(*m_Children)[entryIndex + increment];
@@ -114,7 +112,7 @@ private:
             else
             {
                 // we pop both stack and state
-                // new tree to be explored
+                // new tree to be explored, we need to clear our state from the Finished Branches a.k.a the Ones that reached their loop Limit
                 while (m_State[lastElem] + 1 > m_ChildrenLimits[lastElem])
                 {
                     m_Stack.pop_back();

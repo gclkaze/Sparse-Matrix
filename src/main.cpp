@@ -16,9 +16,9 @@ void assertTupleEquality(const SparseMatrixTuple &t1, const SparseMatrixTuple &t
 
 int main()
 {
-    /*    testInsert();
-        testDelete();*/
-        testIterator();
+    testInsert();
+    testDelete();
+    testIterator();
     testIteratorPerf();
 }
 
@@ -66,7 +66,6 @@ void testIterator()
         assertTupleEquality(tuple, groundTruth[i++]);
     }
     assert(i == (int)groundTruth.size());
-    iterator->tuple;
 }
 
 void assertTupleEquality(const SparseMatrixTuple &t1, const SparseMatrixTuple &t2)
@@ -101,10 +100,8 @@ void testIteratorPerf()
         }
     }
     auto t2 = high_resolution_clock::now();
-    /* Getting number of milliseconds as an integer. */
     auto ms_int = duration_cast<milliseconds>(t2 - t1);
 
-    /* Getting number of milliseconds as a double. */
     duration<double, std::milli> ms_double = t2 - t1;
     std::cout << ms_int.count() << "ms\n";
     std::cout << ms_double.count() << "ms\n";
@@ -115,14 +112,14 @@ void testIteratorPerf()
     int i = 0;
     for (const SparseMatrixTuple &tuple : iterator)
     {
-        //std::cout << "{" << tuple.tuple[0] << "," << tuple.tuple[1] << "," << tuple.tuple[2] << "} := " << tuple.value << std::endl;
+        // std::cout << "{" << tuple.tuple[0] << "," << tuple.tuple[1] << "," << tuple.tuple[2] << "} := " << tuple.value << std::endl;
     }
     t2 = high_resolution_clock::now();
     ms_int = duration_cast<milliseconds>(t2 - t1);
-    
+
     ms_double = t2 - t1;
-    std::cout << "Iterated in "<< ms_int.count() << "ms\n";
-    std::cout << "Iterated in "<< ms_double.count() << "ms\n";
+    std::cout << "Iterated in " << ms_int.count() << "ms\n";
+    std::cout << "Iterated in " << ms_double.count() << "ms\n";
     std::cout << "Inserted " << items << " items." << std::endl;
 }
 
@@ -429,10 +426,8 @@ void testInsert()
     assert(K.size() == items);
 
     auto t2 = high_resolution_clock::now();
-    /* Getting number of milliseconds as an integer. */
     auto ms_int = duration_cast<milliseconds>(t2 - t1);
 
-    /* Getting number of milliseconds as a double. */
     duration<double, std::milli> ms_double = t2 - t1;
     std::cout << ms_int.count() << "ms\n";
     std::cout << ms_double.count() << "ms\n";
