@@ -40,5 +40,5 @@
 # debug information files
 *.dwo
 
-#
+# precompiled headers
 *.h.gch
