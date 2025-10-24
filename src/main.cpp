@@ -14,7 +14,6 @@ void testIterator();
 void testIteratorPerf();
 void assertTupleEquality(const SparseMatrixTuple &t1, const SparseMatrixTuple &t2);
 
-
 int main()
 {
     testInsert();
