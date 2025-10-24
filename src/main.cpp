@@ -10,11 +10,72 @@ using std::chrono::milliseconds;
 
 void testInsert();
 void testDelete();
+void testIterator();
+void assertTupleEquality(const SparseMatrixTuple &t1, const SparseMatrixTuple &t2);
 
 int main()
 {
     testInsert();
     testDelete();
+    testIterator();
+}
+
+void testIterator()
+{
+    SparseMatrix A;
+    A.insert({10, 5, 2}, 4);
+    A.insert({10, 5, 3}, 5);
+    A.insert({10, 5, 4}, 6);
+    A.insert({10, 5, 5}, 7);
+    A.insert({10, 5, 6}, 8);
+
+    A.insert({1, 1, 10}, 2);
+    A.insert({1, 2, 3}, 3);
+    A.insert({1, 1, 1}, 1);
+    A.insert({10, 6, 1}, 9);
+    A.insert({1, 3, 1}, 10);
+    /*
+        A.insert({1,1,4},4);
+        A.insert({1,1,5},5);
+        A.insert({1,1,6},6);
+
+        A.insert({1,1,1},1);
+        A.insert({1,1,2},2);
+        A.insert({1,1,3},3);
+
+    A.insert({255,2,222},7);*/
+    std::vector<SparseMatrixTuple> groundTruth;
+    groundTruth.push_back({{1, 1, 1}, 1});
+    groundTruth.push_back({{1, 1, 10}, 2});
+    groundTruth.push_back({{1, 2, 3}, 3});
+    groundTruth.push_back({{1, 3, 1}, 10});
+    groundTruth.push_back({{10, 5, 2}, 4});
+    groundTruth.push_back({{10, 5, 3}, 5});
+    groundTruth.push_back({{10, 5, 4}, 6});
+    groundTruth.push_back({{10, 5, 5}, 7});
+    groundTruth.push_back({{10, 5, 6}, 8});
+    groundTruth.push_back({{10, 6, 1}, 9});
+
+    SparseMatrixIterator iterator = A.iterator();
+    int i = 0;
+    for (const SparseMatrixTuple &tuple : iterator)
+    {
+        std::cout << "{" << tuple.tuple[0] << "," << tuple.tuple[1] << "," << tuple.tuple[2] << "} := " << tuple.value << std::endl;
+        assertTupleEquality(tuple, groundTruth[i++]);
+    }
+    assert(i == (int)groundTruth.size());
+}
+
+void assertTupleEquality(const SparseMatrixTuple &t1, const SparseMatrixTuple &t2)
+{
+    int sz = (int)t2.tuple.size();
+
+    assert((int)t1.tuple.size() == sz);
+    assert(t1.value == t2.value);
+    for (int i = 0; i < sz; i++)
+    {
+        assert(t1.tuple[i] == t2.tuple[i]);
+    }
 }
 
 void testDelete()
@@ -40,17 +101,47 @@ void testDelete()
     B.assertFlatNodeValues({{0, 4, 0, 0}, {4, 1, 0, 0}, {5, 1, 0, 0}, {-1, 0, 1, 11}, {6, 1, 0, 0}, {7, 1, 0, 0}, {-1, 0, 1, 133}, {8, 1, 0, 0}, {9, 1, 0, 0}, {-1, 0, 1, 143}, {10, 1, 0, 0}, {11, 1, 0, 0}, {-1, 0, 1, 155}});
     assert(B.size() == 4);
 
-    assert(B.erase({1, 5, 6}));
+    assert(B.erase({0, 5, 6}));
     assert(B.size() == 3);
+
+    B.assertFlatChildrenValues({{1, 1}, {4, 4}, {5, 7}, {5, 2}, {6, 3}, {5, 5}, {6, 6}, {5, 8}, {6, 9}});
+    B.assertFlatNodeValues({{0, 3, 0, 0},
+                            {3, 1, 0, 0},
+                            {4, 1, 0, 0},
+                            {-1, 0, 1, 11},
+                            {5, 1, 0, 0},
+                            {6, 1, 0, 0},
+                            {-1, 0, 1, 133},
+                            {7, 1, 0, 0},
+                            {8, 1, 0, 0},
+                            {-1, 0, 1, 143}});
 
     assert(B.erase({4, 5, 6}));
     assert(B.size() == 2);
 
+    B.assertFlatChildrenValues({{1, 1}, {5, 4}, {5, 2}, {6, 3}, {5, 5}, {6, 6}});
+    B.assertFlatNodeValues({{0, 2, 0, 0},
+                            {2, 1, 0, 0},
+                            {3, 1, 0, 0},
+                            {-1, 0, 1, 11},
+                            {4, 1, 0, 0},
+                            {5, 1, 0, 0},
+                            {-1, 0, 1, 143}});
+
     assert(B.erase({5, 5, 6}));
     assert(B.size() == 1);
 
-    assert(B.erase({0, 5, 6}));
+    B.assertFlatChildrenValues({{1, 1}, {5, 2}, {6, 3}});
+    B.assertFlatNodeValues({{0, 1, 0, 0},
+                            {1, 1, 0, 0},
+                            {2, 1, 0, 0},
+                            {-1, 0, 1, 11}});
+
+    assert(B.erase({1, 5, 6}));
     assert(B.size() == 0);
+
+    B.assertFlatChildrenValues({});
+    B.assertFlatNodeValues({{0, 0, 0, 0}});
     return;
 }
 

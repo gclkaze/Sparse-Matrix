@@ -1,11 +1,14 @@
-#ifndef DATA_NODE_H
-#define DATA_NODE_H
+#ifndef SPARSE_MATRIX_H
+#define SPARSE_MATRIX_H
 #include "FlatNode.h"
 #include <assert.h>
 #include <vector>
+#include "SparseMatrixIterator.h"
 
 class SparseMatrix
 {
+  friend class SparseMatrixIterator;
+
   typedef enum SearchStatus
   {
     none,
@@ -19,6 +22,10 @@ class SparseMatrix
   int m_Size = 0;
 
 public:
+  SparseMatrixIterator iterator()
+  {
+    return SparseMatrixIterator(&m_Nodes,&m_FlatChildren,m_Size);
+  }
   bool insert(const std::vector<int> &tuple, double value)
   {
 
@@ -212,7 +219,7 @@ private:
   int findRemovedFlatChildrenBefore(const std::vector<int> &removed, int flatChildrenIndex)
   {
     int ded = 0;
-    for (const int line : removed)
+    for (const int &line : removed)
     {
       if (flatChildrenIndex > line)
       {
@@ -220,6 +227,41 @@ private:
       }
     }
     return ded;
+  }
+
+  void reduceNodeIndices(const std::vector<bool> &zeroChildrenRemaining, const std::vector<int> &visitedNodes, int zeroChildrenAppears)
+  {
+    int min = findMinIndex(zeroChildrenRemaining, visitedNodes);
+    int deduction = zeroChildrenRemaining.size() - zeroChildrenAppears;
+    int flatChildrenSize = (int)m_FlatChildren.size();
+
+    for (int i = 0; i < flatChildrenSize; i++)
+    {
+      if (m_FlatChildren[i].nodeIndex > min)
+      {
+        m_FlatChildren[i].nodeIndex -= deduction;
+      }
+    }
+  }
+
+  void reduceChildOffsets(const std::vector<bool> &zeroChildrenRemaining, const std::vector<int> &visitedNodes, const int zeroChildrenAppears, const std::vector<int> &entries)
+  {
+    int maxD = findMaxIndex(zeroChildrenRemaining, visitedNodes);
+    int deduction = zeroChildrenRemaining.size() - zeroChildrenAppears;
+    int nodesSize = (int)m_Nodes.size();
+
+    for (int i = 1; i < nodesSize; i++)
+    {
+      if (m_Nodes[i].childOffset > maxD)
+      {
+        m_Nodes[i].childOffset -= deduction;
+      }
+      else if (m_Nodes[i].childOffset <= maxD)
+      {
+        int ded = findRemovedFlatChildrenBefore(entries, m_Nodes[i].childOffset);
+        m_Nodes[i].childOffset -= ded;
+      }
+    }
   }
 
   void deleteTuple(std::vector<int> &entries, std::vector<int> &visitedNodes)
@@ -231,13 +273,12 @@ private:
     zeroChildrenRemaining.reserve(max);
 
     int zeroChildrenAppears = -1;
+    FlatChildEntry *child = nullptr;
 
     while (i < max)
     {
-      // std::cout << m_FlatChildren[entries[i]].tupleIndex << std::endl;
       current->numChildren--;
-
-      FlatChildEntry *child = &m_FlatChildren[entries[i]];
+      child = &m_FlatChildren[entries[i]];
 
       if (current->numChildren == 0)
       {
@@ -245,16 +286,13 @@ private:
         {
           zeroChildrenAppears = i;
         }
-        zeroChildrenRemaining.push_back(true);
         // need to delete the subtree
-        // std::cout << "0 children remaining" << std::endl;
+        zeroChildrenRemaining.push_back(true);
       }
       else
       {
-        zeroChildrenRemaining.push_back(false);
-
         // the subtree childrenOffsets need to be adjusted, there are more children
-        // std::cout << "there are more children" << std::endl;
+        zeroChildrenRemaining.push_back(false);
       }
 
       i++;
@@ -264,33 +302,10 @@ private:
 
     // handle flat children
     zeroChildrenRemaining.push_back(true);
-    int min = findMinIndex(zeroChildrenRemaining, visitedNodes);
-    int deduction = zeroChildrenRemaining.size() - zeroChildrenAppears;
-    for (int i = 0; i < (int)m_FlatChildren.size(); i++)
-    {
-      if (m_FlatChildren[i].nodeIndex > min)
-      {
-        m_FlatChildren[i].nodeIndex -= deduction;
-      }
-    }
+    reduceNodeIndices(zeroChildrenRemaining, visitedNodes, zeroChildrenAppears);
 
     // handle node child offsets
-    int maxD = findMaxIndex(zeroChildrenRemaining, visitedNodes);
-    deduction = zeroChildrenRemaining.size() - zeroChildrenAppears;
-
-    for (int i = 1; i < (int)m_Nodes.size(); i++)
-    {
-      if (m_Nodes[i].childOffset > maxD)
-      {
-        m_Nodes[i].childOffset -= deduction;
-      }
-      else if (min < m_Nodes[i].childOffset && m_Nodes[i].childOffset <= maxD)
-      {
-        int ded = findRemovedFlatChildrenBefore(entries, m_Nodes[i].childOffset);
-        m_Nodes[i].childOffset -= ded;
-      }
-    }
-
+    reduceChildOffsets(zeroChildrenRemaining, visitedNodes, zeroChildrenAppears, entries);
     assert(current->isLeaf);
     cleanNodesAndChildren(entries, visitedNodes);
     return;
@@ -521,7 +536,7 @@ public:
                   << groundTruth[0] << std::endl;
       }
 
-      // assert(child.childOffset == groundTruth[0]);
+      assert(child.childOffset == groundTruth[0]);
       assert(child.numChildren == groundTruth[1]);
       assert(child.isLeaf == groundTruth[2]);
       assert(child.value == groundTruth[3]);
