@@ -7,10 +7,8 @@
 class SparseMatrixIterator
 {
 private:
-    std::vector<FlatNode> *m_Nodes;
-    std::vector<FlatChildEntry> *m_Children;
-    int m_CurrentNode = 0;
-    int m_CurrentFlatChild = 0;
+    std::vector<FlatNode> *m_Nodes = nullptr;
+    std::vector<FlatChildEntry> *m_Children = nullptr;
     int m_Size = 0;
     std::vector<int> m_State;
     std::vector<int> m_ChildrenLimits;
@@ -26,7 +24,7 @@ public:
     }
     SparseMatrixIterator begin()
     {
-        return SparseMatrixIterator(m_Nodes, m_Children,m_Size);
+        return SparseMatrixIterator(m_Nodes, m_Children, m_Size);
     }
 
     SparseMatrixIterator end()
@@ -36,77 +34,9 @@ public:
 
     SparseMatrixTuple operator*()
     {
-
-        // SparseMatrixTuple result;
-        //  start from root
+        // start from root
         FlatNode *currentNode = &(*m_Nodes)[0];
-        FlatChildEntry *visited = nullptr;
-
-        int onNewLoop = m_ChildrenLimits.size() == 0;
-        int currentFlatChild = 0;
-        int currentIndex = 0;
-
-        if (m_Stack.empty())
-        {
-            currentIndex = currentNode->childOffset;
-
-            m_Stack.push_back(currentIndex);
-            visited = &(*m_Children)[currentIndex];
-            m_ChildrenLimits.push_back(currentNode->numChildren);
-            m_State.push_back(0);
-        }
-        else
-        {
-            int lastState = m_State.size() - 1;
-            int lastChildrenLimit = m_ChildrenLimits.size() - 1;
-
-            if (m_State[lastState] < m_ChildrenLimits[lastChildrenLimit])
-            {
-                //std::cout << m_State[lastState] << " < " << m_ChildrenLimits[lastChildrenLimit] << std::endl;
-                int lastElem = m_Stack.size() - 1;
-                // int lastStack = m_Stack[lastElem];
-                assert(m_Stack.size() == m_State.size());
-                int entryIndex = m_Stack[lastElem];
-                int increment = m_State[lastElem];
-             //   std::cout << "visited : "<< entryIndex + increment << std::endl;
-            //    std::cout << "entry : "<< entryIndex << " incr + :" << increment << std::endl;
-
-                visited = &(*m_Children)[entryIndex + increment];
-              //  m_Stack[lastElem] = entryIndex + increment;
-            }
-            else
-            {
-                // we pop both stack and state
-                // new tree to be explored
-                int lastElem = m_Stack.size() - 1;
-
-                while (m_State[lastElem] + 1 > m_ChildrenLimits[lastElem])
-                {
-                    m_Stack.pop_back();
-                    m_State.pop_back();
-                    m_ChildrenLimits.pop_back();
-
-                    lastElem--;
-                    if (lastElem == -1)
-                    {
-                        break;
-                    }
-                    m_State[lastElem]++;
-                }
-
-                if (lastElem == -1)
-                {
-                    std::cout << "recalibratio" << std::endl;
-                }
-                else
-                {
-                    lastElem = m_Stack.size() - 1;
-                    int entryIndex = m_Stack[lastElem];
-                    visited = &(*m_Children)[entryIndex + 1];
-                    m_Stack[lastElem] = entryIndex + 1;
-                }
-            }
-        }
+        FlatChildEntry *visited = calibrateVisit(currentNode);
 
         m_Tuple.tuple.clear();
         m_Tuple.value = 0;
@@ -118,12 +48,13 @@ public:
             if (currentNode->isLeaf)
             {
                 int stackSize = m_Stack.size();
+                int childIndex = 0;
                 for (int i = 0; i < stackSize - 1; i++)
                 {
-                    int childIndex = m_Stack[i];//+m_State[i];
+                    childIndex = m_Stack[i];
                     m_Tuple.tuple.push_back((*m_Children)[childIndex].tupleIndex);
                 }
-                int childIndex = m_Stack[stackSize - 1] +m_State[stackSize - 1];
+                childIndex = m_Stack[stackSize - 1] + m_State[stackSize - 1];
                 m_Tuple.tuple.push_back((*m_Children)[childIndex].tupleIndex);
 
                 m_Tuple.value = currentNode->value;
@@ -154,7 +85,6 @@ public:
 
     SparseMatrixIterator &operator++()
     {
-        // ++m_Matrix;
         return *this;
     }
 
@@ -164,6 +94,64 @@ public:
         SparseMatrixIterator tmp = *this;
         ++(*this);
         return tmp;
+    }
+
+private:
+    FlatChildEntry *calibrateVisit(FlatNode *currentNode)
+    {
+        if (!m_Stack.empty())
+        {
+            int lastElem = m_State.size() - 1;
+            assert(m_State.size() == m_Stack.size() && lastElem + 1 == (int)m_ChildrenLimits.size());
+            if (m_State[lastElem] < m_ChildrenLimits[lastElem])
+            {
+                // int lastElem = m_Stack.size() - 1;
+                assert(m_Stack.size() == m_State.size());
+                int entryIndex = m_Stack[lastElem];
+                int increment = m_State[lastElem];
+                return &(*m_Children)[entryIndex + increment];
+            }
+            else
+            {
+                // we pop both stack and state
+                // new tree to be explored
+                while (m_State[lastElem] + 1 > m_ChildrenLimits[lastElem])
+                {
+                    m_Stack.pop_back();
+                    m_State.pop_back();
+                    m_ChildrenLimits.pop_back();
+
+                    lastElem--;
+                    if (lastElem == -1)
+                    {
+                        break;
+                    }
+                    m_State[lastElem]++;
+                }
+
+                if (lastElem != -1)
+                {
+                    lastElem = m_Stack.size() - 1;
+                    int entryIndex = m_Stack[lastElem];
+                    m_Stack[lastElem] = entryIndex + 1;
+                    return &(*m_Children)[entryIndex + 1];
+                }
+                else
+                {
+                    assert(false);
+                }
+            }
+        }
+        else
+        {
+            int currentIndex = currentNode->childOffset;
+            m_Stack.push_back(currentIndex);
+            m_ChildrenLimits.push_back(currentNode->numChildren);
+            m_State.push_back(0);
+            return &(*m_Children)[currentIndex];
+        }
+        assert(false);
+        return nullptr;
     }
 };
 #endif

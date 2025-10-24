@@ -11,13 +11,15 @@ using std::chrono::milliseconds;
 void testInsert();
 void testDelete();
 void testIterator();
+void testIteratorPerf();
 void assertTupleEquality(const SparseMatrixTuple &t1, const SparseMatrixTuple &t2);
 
 int main()
 {
-    testInsert();
-    testDelete();
-    testIterator();
+    /*    testInsert();
+        testDelete();*/
+        testIterator();
+    testIteratorPerf();
 }
 
 void testIterator()
@@ -64,6 +66,7 @@ void testIterator()
         assertTupleEquality(tuple, groundTruth[i++]);
     }
     assert(i == (int)groundTruth.size());
+    iterator->tuple;
 }
 
 void assertTupleEquality(const SparseMatrixTuple &t1, const SparseMatrixTuple &t2)
@@ -76,6 +79,51 @@ void assertTupleEquality(const SparseMatrixTuple &t1, const SparseMatrixTuple &t
     {
         assert(t1.tuple[i] == t2.tuple[i]);
     }
+}
+
+void testIteratorPerf()
+{
+    auto t1 = high_resolution_clock::now();
+    int items = 0;
+    SparseMatrix A;
+    int I = 100;
+    int J = 100;
+    int K = 100;
+    for (int i = 0; i < I; i++)
+    {
+        for (int j = 0; j < J; j++)
+        {
+            for (int k = 0; k < K; k++)
+            {
+                A.insert({i, j, k}, i);
+                items++;
+            }
+        }
+    }
+    auto t2 = high_resolution_clock::now();
+    /* Getting number of milliseconds as an integer. */
+    auto ms_int = duration_cast<milliseconds>(t2 - t1);
+
+    /* Getting number of milliseconds as a double. */
+    duration<double, std::milli> ms_double = t2 - t1;
+    std::cout << ms_int.count() << "ms\n";
+    std::cout << ms_double.count() << "ms\n";
+    std::cout << "Inserted " << items << " items." << std::endl;
+
+    t1 = high_resolution_clock::now();
+    SparseMatrixIterator iterator = A.iterator();
+    int i = 0;
+    for (const SparseMatrixTuple &tuple : iterator)
+    {
+        //std::cout << "{" << tuple.tuple[0] << "," << tuple.tuple[1] << "," << tuple.tuple[2] << "} := " << tuple.value << std::endl;
+    }
+    t2 = high_resolution_clock::now();
+    ms_int = duration_cast<milliseconds>(t2 - t1);
+    
+    ms_double = t2 - t1;
+    std::cout << "Iterated in "<< ms_int.count() << "ms\n";
+    std::cout << "Iterated in "<< ms_double.count() << "ms\n";
+    std::cout << "Inserted " << items << " items." << std::endl;
 }
 
 void testDelete()
