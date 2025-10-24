@@ -1,6 +1,5 @@
 #ifndef FLAT_NODE_H
 #define FLAT_NODE_H
-#include <iostream>
 struct FlatChildEntry{
     int tupleIndex;
     int nodeIndex;

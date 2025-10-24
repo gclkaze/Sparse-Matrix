@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <vector>
 #include "SparseMatrixIterator.h"
+#include <iostream>
 
 class SparseMatrix
 {
@@ -24,7 +25,7 @@ class SparseMatrix
 public:
   SparseMatrixIterator iterator()
   {
-    return SparseMatrixIterator(&m_Nodes,&m_FlatChildren,m_Size);
+    return SparseMatrixIterator(&m_Nodes, &m_FlatChildren, m_Size);
   }
   bool insert(const std::vector<int> &tuple, double value)
   {
@@ -107,8 +108,59 @@ public:
     return true;
   }
 
-  SparseMatrix operator*(const SparseMatrix& other) const{
-    return SparseMatrix();
+  SparseMatrix operator*(SparseMatrix &other)
+  {
+    SparseMatrixIterator it = iterator();
+    SparseMatrixIterator otherIt = other.iterator();
+
+    SparseMatrix result;
+
+    SparseMatrixTuple myTuple = *it;
+    SparseMatrixTuple otherTuple = *otherIt;
+
+    bool myEnd = it.ended();
+    bool otherEnd = otherIt.ended();
+
+    while (true)
+    {
+
+      if (myEnd && otherEnd)
+      {
+/*       if (myTuple == otherTuple)
+        {
+          result.insert(myTuple.tuple, myTuple.value * otherTuple.value);
+        }*/
+        break;
+      }
+      else if (!myEnd && otherEnd)
+      {
+        myTuple = *it;
+      }
+      else if (myEnd && !otherEnd)
+      {
+        otherTuple = *otherIt;
+      }
+
+      if (myTuple == otherTuple)
+      {
+        result.insert(myTuple.tuple, myTuple.value * otherTuple.value);
+        myTuple = *it;
+        otherTuple = *otherIt;
+      }
+      else if (myTuple < otherTuple)
+      {
+        myTuple = *it;
+      }
+      else
+      {
+        otherTuple = *otherIt;
+      }
+
+      myEnd = it.ended();
+      otherEnd = otherIt.ended();
+    }
+
+    return result;
   }
 
 private:

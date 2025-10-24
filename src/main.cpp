@@ -1,6 +1,7 @@
 #include "SparseMatrix/SparseMatrix.h"
 #include <assert.h>
 #include <chrono>
+#include <iostream>
 using namespace std;
 
 using std::chrono::duration;
@@ -14,30 +15,110 @@ void testIterator();
 void testIteratorPerf();
 void assertTupleEquality(const SparseMatrixTuple &t1, const SparseMatrixTuple &t2);
 void testMultiplication();
+void testMultiplicationPerf();
 
 int main()
 {
-/*    testInsert();
+    testInsert();
     testDelete();
     testIterator();
-    testIteratorPerf();*/
+    testIteratorPerf();
     testMultiplication();
+    testMultiplicationPerf();
 }
 
-void testMultiplication(){
+void testMultiplicationPerf()
+{
+    auto t1 = high_resolution_clock::now();
+    SparseMatrix A;
+    int I = 100;
+    int J = 1000;
+    int K = 100;
+    int stride = 10;
+
+    int aSize = 0;
+    int bSize = 0;
+    std::cout << "Matrix construction started!" << std::endl;
+
+    // dense
+    for (int i = 0; i < I; i++)
+    {
+        for (int j = 0; j < J; j++)
+        {
+            for (int k = 0; k < K; k++)
+            {
+                A.insert({i, j, k}, (i + j + k + 1));
+                aSize ++;
+            }
+        }
+    }
+
+    // sparse
+    SparseMatrix B;
+    std::vector<SparseMatrixTuple> groundTruth;
+
+    for (int i = 0; i < I; i += stride)
+    {
+        for (int j = 0; j < J; j += stride)
+        {
+            for (int k = 0; k < K; k += stride)
+            {
+                B.insert({i, j, k}, 2);
+                groundTruth.push_back({{i, j, k}, 2.0 * (i + j + k + 1)});
+                bSize ++;
+            }
+        }
+    }
+
+    auto t2 = high_resolution_clock::now();
+    auto ms_int = duration_cast<milliseconds>(t2 - t1);
+
+    duration<double, std::milli> ms_double = t2 - t1;
+    std:: cout << "A size = "<<aSize << std::endl;
+    std:: cout << "B size = "<<bSize << std::endl;
+    
+    std::cout << "Matrix construction ended!" << std::endl;
+    std::cout << ms_int.count() << "ms\n";
+    std::cout << ms_double.count() << "ms\n";
+
+    std::cout << "Multiplication started!" << std::endl;
+    t1 = high_resolution_clock::now();
+
+    SparseMatrix C = A * B;
+
+    t2 = high_resolution_clock::now();
+    ms_int = duration_cast<milliseconds>(t2 - t1);
+
+    ms_double = t2 - t1;
+
+    SparseMatrixIterator iterator = C.iterator();
+    int i = 0;
+    for (const SparseMatrixTuple &tuple : iterator)
+    {
+ //       std::cout << "{" << tuple.tuple[0] << "," << tuple.tuple[1] << "," << tuple.tuple[2] << "} := " << tuple.value << std::endl;
+        assertTupleEquality(tuple, groundTruth[i++]);
+    }
+    assert(i == (int)groundTruth.size());
+    std::cout << ms_int.count() << "ms\n";
+    std::cout << ms_double.count() << "ms\n";
+    std::cout << "Multiplication ended!" << std::endl;
+}
+
+void testMultiplication()
+{
 
     SparseMatrix A;
-    A.insert({1,1,1},2);
-    A.insert({1,1,2},3);
-    A.insert({1,2,1},4);
-    A.insert({50,2,1},5);
-    
+    A.insert({1, 1, 1}, 2);
+    A.insert({1, 1, 2}, 3);
+    A.insert({1, 2, 1}, 4);
+    A.insert({50, 2, 1}, 5);
+
     SparseMatrix B;
-    B.insert({1,1,1},2);
-    B.insert({1,1,20},3);
-    B.insert({1,20,1},4);
-    B.insert({50,2,1},5);
-    
+    B.insert({1, 1, 1}, 2);
+    B.insert({1, 1, 20}, 3);
+    B.insert({1, 20, 1}, 4);
+    B.insert({50, 2, 1}, 5);
+
     SparseMatrix C = A * B;
     SparseMatrixIterator iterator = C.iterator();
 

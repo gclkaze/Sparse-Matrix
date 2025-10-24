@@ -27,6 +27,10 @@ public:
         return SparseMatrixIterator(m_Nodes, m_Children, m_Size);
     }
 
+    bool ended() const {
+        return m_Size == 0;
+    }
+    
     SparseMatrixIterator end()
     {
         return SparseMatrixIterator(m_Nodes, m_Children);
@@ -34,6 +38,9 @@ public:
 
     SparseMatrixTuple operator*()
     {
+        if(m_Size == 0){
+            return m_Tuple;
+        }
         // start from root
         FlatNode *currentNode = &(*m_Nodes)[0];
         FlatChildEntry *visited = calibrateVisit(currentNode);
