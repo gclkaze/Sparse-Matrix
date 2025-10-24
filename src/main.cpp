@@ -13,13 +13,44 @@ void testDelete();
 void testIterator();
 void testIteratorPerf();
 void assertTupleEquality(const SparseMatrixTuple &t1, const SparseMatrixTuple &t2);
+void testMultiplication();
 
 int main()
 {
-    testInsert();
+/*    testInsert();
     testDelete();
     testIterator();
-    testIteratorPerf();
+    testIteratorPerf();*/
+    testMultiplication();
+}
+
+void testMultiplication(){
+
+    SparseMatrix A;
+    A.insert({1,1,1},2);
+    A.insert({1,1,2},3);
+    A.insert({1,2,1},4);
+    A.insert({50,2,1},5);
+    
+    SparseMatrix B;
+    B.insert({1,1,1},2);
+    B.insert({1,1,20},3);
+    B.insert({1,20,1},4);
+    B.insert({50,2,1},5);
+    
+    SparseMatrix C = A * B;
+    SparseMatrixIterator iterator = C.iterator();
+
+    std::vector<SparseMatrixTuple> groundTruth;
+    groundTruth.push_back({{1, 1, 1}, 4});
+    groundTruth.push_back({{50, 2, 1}, 25});
+    int i = 0;
+    for (const SparseMatrixTuple &tuple : iterator)
+    {
+        std::cout << "{" << tuple.tuple[0] << "," << tuple.tuple[1] << "," << tuple.tuple[2] << "} := " << tuple.value << std::endl;
+        assertTupleEquality(tuple, groundTruth[i++]);
+    }
+    assert(i == (int)groundTruth.size());
 }
 
 void testIterator()

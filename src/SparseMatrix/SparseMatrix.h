@@ -107,6 +107,10 @@ public:
     return true;
   }
 
+  SparseMatrix operator*(const SparseMatrix& other) const{
+    return SparseMatrix();
+  }
+
 private:
   void put(const std::vector<int> &tuple, const double value)
   {
