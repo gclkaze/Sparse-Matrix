@@ -1,11 +1,11 @@
 #ifndef FLAT_NODE_H
 #define FLAT_NODE_H
-struct FlatChildEntry{
+struct FlatChildEntry {
     int tupleIndex;
     int nodeIndex;
 };
 
-struct FlatNode{
+struct FlatNode {
     int childOffset;
     int numChildren;
     bool isLeaf;
