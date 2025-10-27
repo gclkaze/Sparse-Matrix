@@ -279,6 +279,30 @@ class SparseMatrix {
 
         int maxSize =
             maxOffsetLeft < maxOffsetRight ? maxOffsetRight : maxOffsetLeft;
+/*
+                    int offsetLeft = visitLeft->childOffset;
+        int maxOffsetLeft = visitLeft->numChildren;
+        std::vector<int> indicesLeft(maxOffsetLeft);
+        std::vector<int> indicesLeftPos(maxOffsetLeft);
+
+        for (int i = offsetLeft; i < offsetLeft + maxOffsetLeft; i++) {
+            indicesLeft.push_back(m_FlatChildren[i].tupleIndex);
+            indicesLeftPos.push_back(i);
+        }
+
+        int offsetRight = visitRight->childOffset;
+        int maxOffsetRight = visitRight->numChildren;
+
+        std::vector<int> indicesRight(maxOffsetRight);
+        std::vector<int> indicesRightPos(maxOffsetRight);
+
+        for (int i = offsetRight; i < offsetRight + maxOffsetRight; i++) {
+            indicesRight.push_back(other.m_FlatChildren[i].tupleIndex);
+            indicesRightPos.push_back(i);
+        }
+
+        int maxSize =
+            maxOffsetLeft < maxOffsetRight ? maxOffsetRight : maxOffsetLeft;*/
 
         k = 0;
         CommonOffset *offsets =

@@ -161,9 +161,9 @@ void testMultiplicationNewPerf() {
     auto t1 = high_resolution_clock::now();
     SparseMatrix A;
     int I = 50;
-    int J = 10;
+    int J = 110;
     int K = 100;
-    int stride = 13;
+    int stride = 3;
     int executionTimes = 100;
     int aSize = 0;
     int bSize = 0;
