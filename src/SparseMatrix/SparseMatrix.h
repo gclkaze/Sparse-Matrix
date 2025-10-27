@@ -33,6 +33,7 @@ class SparseMatrix {
     SparseMatrix(SparseMatrix &&) = default;
     SparseMatrix &operator=(SparseMatrix &&) = default;
 
+
     bool operator==(SparseMatrix &other) {
         if (m_Size != other.m_Size) {
             return false;
@@ -90,7 +91,6 @@ class SparseMatrix {
             m_Mutex = std::make_unique<std::mutex>();
         }
         std::lock_guard<std::mutex> lock(*m_Mutex);
-
         std::vector<int> tt;
 
         tt.reserve(tupleSize);

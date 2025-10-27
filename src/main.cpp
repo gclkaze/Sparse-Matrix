@@ -31,10 +31,10 @@ int main() {
     // testMultiplicationPerf();
 
     //   testMultiplicationPerfMulti();
-//testMultiplicationNew();
-        testMultiplicationNewPerf();
+    // testMultiplicationNew();
+    testMultiplicationNewPerf();
 
-   //     testParallelThreadedMultiplication();
+    //     testParallelThreadedMultiplication();
 }
 
 void testParallelThreadedMultiplication() {
@@ -96,7 +96,6 @@ void testParallelThreadedMultiplication() {
     std::cout << ms_double.count() << "ms\n";
     std::cout << "Test completed, Matrices are equal!" << std::endl;
 }
-
 
 void testMultiplicationNew() {
     auto t1 = high_resolution_clock::now();
@@ -161,10 +160,10 @@ void testMultiplicationNew() {
 void testMultiplicationNewPerf() {
     auto t1 = high_resolution_clock::now();
     SparseMatrix A;
-    int I = 128;
-    int J = 1000;
+    int I = 4;
+    int J = 100;
     int K = 100;
-    int stride = 4;
+    int stride = 1;
     int executionTimes = 100;
     int aSize = 0;
     int bSize = 0;
@@ -206,8 +205,7 @@ void testMultiplicationNewPerf() {
     t1 = high_resolution_clock::now();
     for (int i = 0; i < executionTimes; i++) {
         SparseMatrix C = A.newThreadedMultiplication(B);
-     //   std::cout << C.size() << std::endl;
-
+        //   std::cout << C.size() << std::endl;
     }
 
     t2 = high_resolution_clock::now();
@@ -221,8 +219,7 @@ void testMultiplicationNewPerf() {
     t1 = high_resolution_clock::now();
     for (int i = 0; i < executionTimes; i++) {
         SparseMatrix D = A * B;
-      //  std::cout << D.size() << std::endl;
-
+        //          std::cout << D.size() << std::endl;
     }
 
     t2 = high_resolution_clock::now();
