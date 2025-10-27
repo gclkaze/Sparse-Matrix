@@ -160,10 +160,10 @@ void testMultiplicationNew() {
 void testMultiplicationNewPerf() {
     auto t1 = high_resolution_clock::now();
     SparseMatrix A;
-    int I = 4;
+    int I = 100;
     int J = 100;
     int K = 100;
-    int stride = 1;
+    int stride = 3;
     int executionTimes = 100;
     int aSize = 0;
     int bSize = 0;
@@ -201,7 +201,7 @@ void testMultiplicationNewPerf() {
     std::cout << "B size = " << bSize << std::endl;
 
     std::cout << "Matrix construction ended!" << std::endl;
-
+    std::cout << "Tree Multiplication start!" << std::endl;
     t1 = high_resolution_clock::now();
     for (int i = 0; i < executionTimes; i++) {
         SparseMatrix C = A.newThreadedMultiplication(B);
@@ -216,6 +216,20 @@ void testMultiplicationNewPerf() {
     std::cout << ms_double.count() << "ms\n";
     std::cout << "Tree Multiplication ended!" << std::endl;
 
+    std::cout << "Ranged Tree Multiplication start!" << std::endl;
+    t1 = high_resolution_clock::now();
+    for (int i = 0; i < executionTimes; i++) {
+        SparseMatrix C = A.newRangedThreadedMultiplication(B);
+    }
+
+    t2 = high_resolution_clock::now();
+    ms_int = duration_cast<milliseconds>(t2 - t1);
+
+    ms_double = t2 - t1;
+    std::cout << ms_int.count() << "ms\n";
+    std::cout << ms_double.count() << "ms\n";
+    std::cout << "Ranged Tree Multiplication ended!" << std::endl;
+    std::cout << "Old Multiplication started!" << std::endl;
     t1 = high_resolution_clock::now();
     for (int i = 0; i < executionTimes; i++) {
         SparseMatrix D = A * B;
