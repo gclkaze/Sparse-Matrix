@@ -32,6 +32,10 @@ class SparseMatrixIterator {
         return SparseMatrixIterator(m_Nodes, m_Children);
     }
 
+    SparseMatrixTuple& getTuple(){
+        return m_Tuple;
+    }
+
     SparseMatrixTuple operator*() {
         if (m_Size == 0) {
             return m_Tuple;

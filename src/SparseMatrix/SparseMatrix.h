@@ -1,9 +1,11 @@
 #ifndef SPARSE_MATRIX_H
 #define SPARSE_MATRIX_H
+#include "CommonOffset.h"
 #include "FlatNode.h"
 #include "SparseMatrixIterator.h"
 #include <assert.h>
 #include <iostream>
+#include <string>
 #include <vector>
 
 class SparseMatrix {
@@ -14,8 +16,30 @@ class SparseMatrix {
     std::vector<FlatNode> m_Nodes;
     std::vector<FlatChildEntry> m_FlatChildren;
     int m_Size = 0;
+    int m_Multi = 0;
 
   public:
+    bool operator==(SparseMatrix &other) {
+        if (m_Size != other.m_Size) {
+            return false;
+        }
+
+        // lets make to iterators
+        SparseMatrixIterator it = iterator();
+        SparseMatrixIterator theOtherIt = other.iterator();
+        for (const SparseMatrixTuple &myTuple : it) {
+            *theOtherIt;
+            SparseMatrixTuple &theOtherTuple = theOtherIt.getTuple();
+            if (myTuple != theOtherTuple) {
+                return false;
+            }
+            if (myTuple.value != theOtherTuple.value) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     void reset() {
         m_Nodes.clear();
         m_FlatChildren.clear();
@@ -40,6 +64,32 @@ class SparseMatrix {
             return true;
         }
         put(tuple, value);
+        return true;
+    }
+
+    bool insert( const int *tupleContainer, int tupleSize, double value) {
+
+        std::vector<int> tt;
+
+        tt.reserve(tupleSize);
+        for (int i = 0; i < tupleSize; i++) {
+            //std::cout << tupleContainer[i] << std::endl;
+            tt.push_back(tupleContainer[i]);
+        }
+
+        if (value == 0.0) {
+            return erase(tt);
+        }
+
+        assert(tt.size() > 0);
+
+        if (m_Nodes.size() == 0) {
+            // root is empty
+            m_Nodes.push_back({0, false, 0, 0, 0});
+            put(tt, value);
+            return true;
+        }
+        put(tt, value);
         return true;
     }
 
@@ -95,6 +145,219 @@ class SparseMatrix {
         return true;
     }
 
+    SparseMatrix newMultiplication(SparseMatrix &other) {
+        SparseMatrix result;
+        if (m_Size == 0 || other.m_Size == 0) {
+            return result;
+        }
+
+        FlatNode *visitLeft = &(m_Nodes)[0];
+        std::vector<FlatNode> *o = &(other.m_Nodes);
+        FlatNode *visitRight = &(*o)[0];
+
+        CommonOffsets *common = findCommonIndices(visitLeft, visitRight, other);
+        assert(common);
+
+        if (!common->actualSize) {
+            free(common->offsets);
+            free(common);
+            return result;
+        }
+
+        for (int i = 0; i < common->actualSize; i++) {
+            CommonOffset offset = common->offsets[i];
+
+            int left = offset.indexLeft;
+            int right = offset.indexRight;
+
+            int leftNode = m_FlatChildren[left].nodeIndex;
+            int rightNode = other.m_FlatChildren[right].nodeIndex;
+
+            visitLeft = &(m_Nodes)[leftNode];
+            visitRight = &(other.m_Nodes)[rightNode];
+
+            int *tuple = (int *)malloc(sizeof(int));
+            tuple[0] = offset.tupleKey;            
+            reduceTree(visitLeft, visitRight, other, &result, &tuple, 1);
+            free(tuple);
+        }
+        // free(common->commonRoots);
+        free(common->offsets);
+        free(common);
+        return result;
+    }
+
+  private:
+    void reduceTree(FlatNode *visitLeft, FlatNode *visitRight,
+                    SparseMatrix other, SparseMatrix *destination, int **tuple,
+                    int tupleMaxSize) {
+        int offsetLeft = visitLeft->childOffset;
+        int maxOffsetLeft = visitLeft->numChildren;
+        int *indicesLeft = (int *)malloc(sizeof(int) * maxOffsetLeft);
+        int *indicesLeftPos = (int *)malloc(sizeof(int) * maxOffsetLeft);
+
+        int k = 0;
+        for (int i = offsetLeft; i < offsetLeft + maxOffsetLeft; i++) {
+            indicesLeft[k] = m_FlatChildren[i].tupleIndex;
+            indicesLeftPos[k] = i;
+            k++;
+        }
+
+        int offsetRight = visitRight->childOffset;
+        int maxOffsetRight = visitRight->numChildren;
+        int *indicesRight = (int *)malloc(sizeof(int) * maxOffsetRight);
+        int *indicesRightPos = (int *)malloc(sizeof(int) * maxOffsetRight);
+
+        k = 0;
+        for (int i = offsetRight; i < offsetRight + maxOffsetRight; i++) {
+            indicesRight[k] = other.m_FlatChildren[i].tupleIndex;
+            indicesRightPos[k] = i;
+            k++;
+        }
+
+        int maxSize =
+            maxOffsetLeft < maxOffsetRight ? maxOffsetRight : maxOffsetLeft;
+        //  int *commonRoots = (int *)malloc(sizeof(int) * (maxSize));
+
+        k = 0;
+        CommonOffset *offsets =
+            (CommonOffset *)malloc(sizeof(CommonOffset) * maxSize);
+
+        // lets find common root nodes
+        int j = indicesRight[0];
+        for (int i = 0; i < maxOffsetLeft; i++) {
+            int indexLeft = indicesLeft[i];
+            for (; j < maxOffsetRight; j++) {
+                int indexRight = indicesRight[j];
+                if (indexLeft == indexRight) {
+                    offsets[k] = {indicesLeftPos[i], indicesRightPos[j],
+                                  indexRight};
+                    // commonRoots[k++] = indexLeft;
+                    k++;
+                    j++;
+                    break;
+                }
+                if (indexLeft < indexRight) {
+                    break;
+                }
+            }
+        }
+        free(indicesLeft);
+        free(indicesRight);
+        free(indicesLeftPos);
+        free(indicesRightPos);
+        // free(commonRoots);
+
+        for (int i = 0; i < k; i++) {
+            CommonOffset offset = offsets[i];
+            int left = offset.indexLeft;
+            int right = offset.indexRight;
+
+            int leftNode = m_FlatChildren[left].nodeIndex;
+            int rightNode = other.m_FlatChildren[right].nodeIndex;
+
+            visitLeft = &(m_Nodes)[leftNode];
+            visitRight = &(other.m_Nodes)[rightNode];
+
+            assert(visitLeft);
+            assert(visitRight);
+
+            if (visitLeft->isLeaf && visitRight->isLeaf) {
+                // do the operation
+                m_Multi++;
+                double result = visitLeft->value * visitRight->value;
+                *tuple = (int *)realloc(*tuple, sizeof(int) * (tupleMaxSize + 1));    
+                assert(tuple);
+                (*tuple)[tupleMaxSize] = offset.tupleKey;
+                destination->insert(*tuple, tupleMaxSize + 1, result);
+                *tuple = (int *)realloc(*tuple, sizeof(int) * (tupleMaxSize));    assert(tuple);
+                continue;
+            }
+
+            assert(!visitLeft->isLeaf && !visitRight->isLeaf);
+            *tuple = (int *)realloc(*tuple, sizeof(int) * (tupleMaxSize + 1)); 
+            (*tuple)[tupleMaxSize] = offset.tupleKey;
+            reduceTree(visitLeft, visitRight, other, destination, tuple,
+                       tupleMaxSize + 1);
+           assert(tuple);
+            *tuple = (int *)realloc(*tuple, sizeof(int) * (tupleMaxSize));            
+        }
+
+        free(offsets);
+    //     tuple = (int *)realloc(tuple, sizeof(int) * (tupleMaxSize));
+
+        return;
+    }
+
+    CommonOffsets *findCommonIndices(FlatNode *visitLeft, FlatNode *visitRight,
+                                     SparseMatrix other) {
+
+        // lets find the root nodes for each
+        int offsetLeft = visitLeft->childOffset;
+        int maxOffsetLeft = visitLeft->numChildren;
+        int *indicesLeft = (int *)malloc(sizeof(int) * maxOffsetLeft);
+        int *indicesLeftPos = (int *)malloc(sizeof(int) * maxOffsetLeft);
+
+        int k = 0;
+        for (int i = offsetLeft; i < offsetLeft + maxOffsetLeft; i++) {
+            indicesLeft[k] = m_FlatChildren[i].tupleIndex;
+            indicesLeftPos[k] = i;
+            k++;
+        }
+
+        int offsetRight = visitRight->childOffset;
+        int maxOffsetRight = visitRight->numChildren;
+        int *indicesRight = (int *)malloc(sizeof(int) * maxOffsetRight);
+        int *indicesRightPos = (int *)malloc(sizeof(int) * maxOffsetRight);
+
+        k = 0;
+        for (int i = offsetRight; i < offsetRight + maxOffsetRight; i++) {
+            indicesRight[k] = other.m_FlatChildren[i].tupleIndex;
+            indicesRightPos[k] = i;
+            k++;
+        }
+
+        int maxSize =
+            maxOffsetLeft < maxOffsetRight ? maxOffsetRight : maxOffsetLeft;
+        //  int *commonRoots = (int *)malloc(sizeof(int) * (maxSize));
+
+        k = 0;
+        CommonOffset *offsets =
+            (CommonOffset *)malloc(sizeof(CommonOffset) * maxSize);
+
+        // lets find common root nodes
+        int j = indicesRight[0];
+        for (int i = 0; i < maxOffsetLeft; i++) {
+            int indexLeft = indicesLeft[i];
+            for (; j < maxOffsetRight; j++) {
+                int indexRight = indicesRight[j];
+                if (indexLeft == indexRight) {
+                    offsets[k] = {indicesLeftPos[i], indicesRightPos[j],
+                                  indexRight};
+                    k++; // commonRoots[k++] = indexLeft;
+                    j++;
+                    break;
+                }
+                if (indexLeft < indexRight) {
+                    break;
+                }
+            }
+        }
+
+        CommonOffsets *off = (CommonOffsets *)malloc(sizeof(CommonOffsets));
+        off->offsets = offsets;
+        off->maxSize = maxSize;
+        off->actualSize = k;
+        // off->commonRoots = commonRoots;
+
+        free(indicesLeft);
+        free(indicesRight);
+        free(indicesLeftPos);
+        free(indicesRightPos);
+        return off;
+    }
+
+  public:
     SparseMatrix operator*(SparseMatrix &other) {
         SparseMatrixIterator it = iterator();
         SparseMatrixIterator otherIt = other.iterator();
