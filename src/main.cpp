@@ -23,18 +23,19 @@ void testMultiplicationNewPerf();
 void testParallelThreadedMultiplication();
 
 int main() {
-    /*    testInsert();
-        testDelete();
-        testIterator();
-        testIteratorPerf();*/
-    //      testMultiplication();
+    testInsert();
+    testDelete();
+    testIterator();
+    testIteratorPerf();
+    testMultiplication();
     testMultiplicationPerf();
 
-    //   testMultiplicationPerfMulti();
-    //    testMultiplicationNew();
-    //  testMultiplicationNewPerf();
+    testMultiplicationPerfMulti();
+    testMultiplicationNew();
+    testMultiplicationNewPerf();
 
-    //     testParallelThreadedMultiplication();
+    testParallelThreadedMultiplication();
+    std::cout << "End of Tests!" << std::endl;
 }
 
 void testParallelThreadedMultiplication() {
