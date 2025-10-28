@@ -194,7 +194,7 @@ class SparseMatrix {
         assert(common);
 
         if (!common->actualSize) {
-            common.get()->offsets->clear();
+            common.get()->offsets.clear();
             common.reset();
 
             return result;
@@ -202,7 +202,7 @@ class SparseMatrix {
 
         std::vector<int> t;
 
-        for(const CommonOffset &offset : *(common)->offsets){
+        for (const CommonOffset &offset : common.get()->offsets) {
 
             int left = offset.indexLeft;
             int right = offset.indexRight;
@@ -218,7 +218,7 @@ class SparseMatrix {
             t.pop_back();
         }
 
-        common.get()->offsets->clear();
+        common.get()->offsets.clear();
         common.reset();
         return result;
     }
@@ -551,8 +551,10 @@ class SparseMatrix {
         // lets find the root nodes for each
         int offsetLeft = visitLeft->childOffset;
         int maxOffsetLeft = visitLeft->numChildren;
-        std::vector<int> indicesLeft(maxOffsetLeft);
-        std::vector<int> indicesLeftPos(maxOffsetLeft);
+        std::vector<int> indicesLeft;
+        indicesLeft.reserve(maxOffsetLeft);
+        std::vector<int> indicesLeftPos;
+        indicesLeftPos.reserve(maxOffsetLeft);
 
         for (int i = offsetLeft; i < offsetLeft + maxOffsetLeft; i++) {
             indicesLeft.push_back(m_FlatChildren[i].tupleIndex);
@@ -562,8 +564,10 @@ class SparseMatrix {
         int offsetRight = visitRight->childOffset;
         int maxOffsetRight = visitRight->numChildren;
 
-        std::vector<int> indicesRight(maxOffsetRight);
-        std::vector<int> indicesRightPos(maxOffsetRight);
+        std::vector<int> indicesRight;
+        indicesRight.reserve(maxOffsetRight);
+        std::vector<int> indicesRightPos;
+        indicesRightPos.reserve(maxOffsetRight);
 
         for (int i = offsetRight; i < offsetRight + maxOffsetRight; i++) {
             indicesRight.push_back(other.m_FlatChildren[i].tupleIndex);
@@ -580,8 +584,8 @@ class SparseMatrix {
             for (; j < maxOffsetRight; j++) {
                 int indexRight = indicesRight[j];
                 if (indexLeft == indexRight) {
-                    offsets.push_back({indicesLeftPos[i], indicesRightPos[j],
-                                  indexRight});
+                    offsets.push_back(
+                        {indicesLeftPos[i], indicesRightPos[j], indexRight});
                     j++;
                     break;
                 }
@@ -591,11 +595,14 @@ class SparseMatrix {
             }
         }
 
-        std::unique_ptr<CommonOffsets> off = std::make_unique<CommonOffsets>();
-        off->offsets = &offsets;
-        off->maxSize = maxSize;
-        off->actualSize = offsets.size();
-        return std::move(off);
+        /*        std::unique_ptr<CommonOffsets> off =
+           std::make_unique<CommonOffsets>(); off->offsets = &offsets;
+                off->maxSize = maxSize;
+                off->actualSize = offsets.size();*/
+
+        auto ptr = std::unique_ptr<CommonOffsets>{
+            new CommonOffsets{offsets, maxSize, (int)offsets.size()}};
+        return ptr;
     }
 
   public:
