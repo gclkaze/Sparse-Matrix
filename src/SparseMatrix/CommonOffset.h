@@ -1,6 +1,7 @@
 #ifndef COMMON_OFFSET_H
 #define COMMON_OFFSET_H
 #include <iostream>
+#include <vector>
 struct CommonOffset {
     int indexLeft;
     int indexRight;
@@ -8,15 +9,17 @@ struct CommonOffset {
 };
 
 struct CommonOffsets {
-    CommonOffset *offsets;
+    std::vector<CommonOffset> *offsets;
     int maxSize;
     int actualSize;
    // int *commonRoots;
 
     void dump() {
         for (int i = 0; i < actualSize; i++) {
-            std::cout << i << " : " << offsets[i].indexLeft << ","
-                      << offsets[i].indexRight << " = " << offsets[i].tupleKey
+            CommonOffset offset = (*offsets)[i];
+
+            std::cout << i << " : " << offset.indexLeft << ","
+                      << offset.indexRight << " = " << offset.tupleKey
                       << std::endl;
         }
     }
