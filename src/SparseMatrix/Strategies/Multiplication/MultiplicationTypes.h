@@ -1,0 +1,8 @@
+#ifndef MULTIPLICATION_TYPES_H
+#define MULTIPLICATION_TYPES_H
+enum MultiplicationTypes{
+   RANGED_TREE_THREADED,
+   BLINDLY_THREADED,
+   SIMPLE_ITERATION
+};
+#endif

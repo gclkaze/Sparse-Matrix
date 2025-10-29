@@ -2,7 +2,9 @@
 #define SPARSE_MATRIX_H
 #include "CommonOffset.h"
 #include "FlatNode.h"
+#include "ISparseMatrix.h"
 #include "SparseMatrixIterator.h"
+#include "Strategies/Multiplication/MultiplicationStrategyFactory.h"
 #include <assert.h>
 #include <atomic>
 #include <iostream>
@@ -12,8 +14,10 @@
 #include <thread>
 #include <vector>
 
-class SparseMatrix {
+class SparseMatrix : public ISparseMatrix {
     friend class SparseMatrixIterator;
+    friend class IMultiplicationStrategy;
+    friend class RangedTreeThreadedMultiplication;
 
     typedef enum SearchStatus { none, smaller, equal, larger } SearchStatus;
 
@@ -25,9 +29,16 @@ class SparseMatrix {
     size_t m_RangeElementsPerThread = 20;
 
   public:
+    std::vector<FlatNode> &getNodes() override { return m_Nodes; };
+    std::vector<FlatChildEntry> &getFlatChildren() override {
+        return m_FlatChildren;
+    };
     SparseMatrix() : m_Lock(std::make_unique<std::atomic_flag>()) {
         m_Lock->clear();
     }
+
+    ~SparseMatrix() { reset(); }
+
     // Prevent copying
     SparseMatrix(const SparseMatrix &) = delete;
     SparseMatrix &operator=(const SparseMatrix &) = delete;
@@ -64,7 +75,7 @@ class SparseMatrix {
         }
     }
 
-    void reset() {
+    void reset() override {
         m_Nodes.clear();
         m_FlatChildren.clear();
         m_Size = 0;
@@ -73,7 +84,7 @@ class SparseMatrix {
     SparseMatrixIterator iterator() {
         return SparseMatrixIterator(&m_Nodes, &m_FlatChildren, m_Size);
     }
-    bool insert(const std::vector<int> &tuple, double value) {
+    bool insert(const std::vector<int> &tuple, double value) override {
         while (m_Lock->test_and_set(std::memory_order_acquire))
             ;
         if (value == 0.0) {
@@ -96,7 +107,8 @@ class SparseMatrix {
         return true;
     }
 
-    bool insert(const int *tupleContainer, int tupleSize, double value) {
+    bool insert(const int *tupleContainer, int tupleSize,
+                double value) override {
         while (m_Lock->test_and_set(std::memory_order_acquire))
             ;
         std::vector<int> tt;
@@ -127,9 +139,9 @@ class SparseMatrix {
         return true;
     }
 
-    const int size() { return m_Size; }
+    const int size() const override { return m_Size; }
 
-    void clear() {
+    void clear() override {
         if (m_Size == 0) {
             return;
         }
@@ -138,7 +150,7 @@ class SparseMatrix {
         m_Nodes.clear();
     }
 
-    bool erase(const std::vector<int> &tuple) {
+    bool erase(const std::vector<int> &tuple) override {
         // we need to check if the tuple exists.
         int tupleSize = static_cast<int>(tuple.size());
         if (tupleSize == 0) {
@@ -237,18 +249,29 @@ class SparseMatrix {
         return result;
     }
 
-    SparseMatrix newRangedThreadedMultiplication(SparseMatrix &other) {
-        SparseMatrix result;
-        if (m_Size == 0 || other.m_Size == 0) {
-            return result;
-        }
+    SparseMatrix newRangedThreadedMultiplication( SparseMatrix &other) {
+        /*        SparseMatrix result;
+                if (m_Size == 0 || other.m_Size == 0) {
+                    return result;
+                }
 
-        FlatNode *visitLeft = &(m_Nodes)[0];
-        std::vector<FlatNode> *o = &(other.m_Nodes);
-        FlatNode *visitRight = &(*o)[0];
+                FlatNode *visitLeft = &(m_Nodes)[0];
+                std::vector<FlatNode> *o = &(other.m_Nodes);
+                FlatNode *visitRight = &(*o)[0];
 
-        findRangedThreadedCommonIndices(visitLeft, visitRight, other, &result);
+                findRangedThreadedCommonIndices(visitLeft, visitRight, other,
+           &result);
+        */
+
+        auto ptr = MultiplicationStrategyFactory::createMultiplication(
+            RANGED_TREE_THREADED);
+
+         SparseMatrix result;
+       //     SparseMatrix *p = new SparseMatrix();
+          ptr.get()->multiply(this, &other, &result);
+
         return result;
+        //        return result;
     }
 
   private:
@@ -595,11 +618,6 @@ class SparseMatrix {
             }
         }
 
-        /*        std::unique_ptr<CommonOffsets> off =
-           std::make_unique<CommonOffsets>(); off->offsets = &offsets;
-                off->maxSize = maxSize;
-                off->actualSize = offsets.size();*/
-
         auto ptr = std::unique_ptr<CommonOffsets>{
             new CommonOffsets{offsets, maxSize, (int)offsets.size()}};
         return ptr;
@@ -668,7 +686,7 @@ class SparseMatrix {
 
         while (true) {
 
-            if (myEnd && otherEnd) {
+            if (myEnd && otherEnd) {                
                 break;
             } else if (!myEnd && otherEnd) {
                 myTuple = *it;
@@ -987,7 +1005,7 @@ class SparseMatrix {
     }
 
   public:
-    double getValue(const std::vector<int> &tuple) {
+    double getValue(const std::vector<int> &tuple) override {
         FlatNode *current = &m_Nodes[0];
         SearchStatus status = none;
         int nodeIndex = -1;
