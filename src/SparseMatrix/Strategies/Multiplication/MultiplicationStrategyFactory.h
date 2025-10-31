@@ -1,6 +1,6 @@
 #ifndef MULTIPLICATION_STRATEGY_FACTORY_H
 #define MULTIPLICATION_STRATEGY_FACTORY_H
-// #include "IMultiplicationStrategy.h"
+
 #include "BlindlyThreadedTreeMultiplication.h"
 #include "LateComparisonMultiplication.h"
 #include "MultiplicationTypes.h"

@@ -4,7 +4,6 @@
 #include <vector>
 #include <assert.h>
 
-//class IMatrix;
 class IMultiplicationStrategy {
     friend class SparseMatrix;
     protected :
