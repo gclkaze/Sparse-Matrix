@@ -1,11 +1,15 @@
 #ifndef MULTIPLICATION_STRATEGY_FACTORY_H
 #define MULTIPLICATION_STRATEGY_FACTORY_H
-//#include "IMultiplicationStrategy.h"
+// #include "IMultiplicationStrategy.h"
+#include "LateComparisonMultiplication.h"
 #include "MultiplicationTypes.h"
 #include "RangedTreeThreadedMultiplication.h"
 #include "TupleIteratorMultiplication.h"
+#include "OffsetTreeMultiplication.h"
+#include "BlindlyThreadedTreeMultiplication.h"
 #include <assert.h>
 #include <memory>
+
 
 class MultiplicationStrategyFactory {
   public:
@@ -13,18 +17,28 @@ class MultiplicationStrategyFactory {
     createMultiplication(MultiplicationTypes type) {
         switch (type) {
         case RANGED_TREE_THREADED: {
-            auto ptr = std::make_unique<RangedTreeThreadedMultiplication>();            
+            auto ptr = std::make_unique<RangedTreeThreadedMultiplication>();
             return std::move(ptr);
         }
-        case BLINDLY_THREADED: {
-            assert(false);
+        case OFFSET_TREE: {
+            auto ptr = std::make_unique<OFfsetTreeMultiplication>();
+            return std::move(ptr);
         }
+
+        case BLINDLY_THREADED_TREE: {
+            auto ptr = std::make_unique<BlindlyThreadedTreeMultiplication>();
+            return std::move(ptr);
+        }
+        case LATE_COMPARISON: {
+            auto ptr = std::make_unique<LateComparisonMultiplication>();
+            return std::move(ptr);
+        }
+
         case SIMPLE_ITERATION: {
         }
-        case TUPLE_ITERATION:{
-            auto ptr = std::make_unique<TupleIteratorMultiplication>();            
+        case TUPLE_ITERATION: {
+            auto ptr = std::make_unique<TupleIteratorMultiplication>();
             return std::move(ptr);
-
         }
         default: {
             assert(false);

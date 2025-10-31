@@ -30,14 +30,15 @@ int main() {
     testMultiplication();
 
     testMultiplicationPerfMulti();
+
     testMultiplicationNew();
-    testMultiplicationNewPerf();
+   testMultiplicationNewPerf();*/
 
-    testParallelThreadedMultiplication();
+     testParallelThreadedMultiplication();
+/*
 
-*/
     testMultiplicationPerf();
-
+*/
     std::cout << "End of Tests!" << std::endl;
 }
 
@@ -48,7 +49,7 @@ void testParallelThreadedMultiplication() {
     int J = 100;
     int K = 100;
     int stride = 2;
-    int executionTimes = 1;
+    int executionTimes = 200;
     int aSize = 0;
     int bSize = 0;
     std::cout << "Matrix construction started!" << std::endl;
@@ -108,7 +109,7 @@ void testMultiplicationNew() {
     int J = 100;
     int K = 100;
     int stride = 2;
-    int executionTimes = 1;
+    int executionTimes = 100;
     int aSize = 0;
     int bSize = 0;
     std::cout << "Matrix construction started!" << std::endl;
@@ -225,8 +226,8 @@ void testMultiplicationNewPerf() {
     t1 = high_resolution_clock::now();
     for (int i = 0; i < executionTimes; i++) {
         SparseMatrix C = A.newRangedThreadedMultiplication(B);
-        //  SparseMatrix D = A * B;
-        //  assert(C == D);
+          SparseMatrix D = A * B;
+          assert(C == D);
     }
 
     t2 = high_resolution_clock::now();
@@ -260,7 +261,7 @@ void testMultiplicationPerfMulti() {
     int J = 100;
     int K = 100;
     int stride = 15;
-    int executionTimes = 200;
+    int executionTimes = 2;
     int aSize = 0;
     int bSize = 0;
     std::cout << "Matrix construction started!" << std::endl;

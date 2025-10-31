@@ -21,8 +21,8 @@ class RangedTreeThreadedMultiplication : public IMultiplicationStrategy {
             return C;
         }
 
-        FlatNode &visitLeft =  A->getNodes()[0];
-        FlatNode &visitRight = B->getNodes()[0];
+        FlatNode visitLeft =  A->getNodes()[0];
+        FlatNode visitRight = B->getNodes()[0];
 
         findRangedThreadedCommonIndices(visitLeft, visitRight, A, B, C);
 
