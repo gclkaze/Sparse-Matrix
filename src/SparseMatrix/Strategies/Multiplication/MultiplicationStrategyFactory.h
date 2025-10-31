@@ -1,15 +1,14 @@
 #ifndef MULTIPLICATION_STRATEGY_FACTORY_H
 #define MULTIPLICATION_STRATEGY_FACTORY_H
 // #include "IMultiplicationStrategy.h"
+#include "BlindlyThreadedTreeMultiplication.h"
 #include "LateComparisonMultiplication.h"
 #include "MultiplicationTypes.h"
+#include "OffsetTreeMultiplication.h"
 #include "RangedTreeThreadedMultiplication.h"
 #include "TupleIteratorMultiplication.h"
-#include "OffsetTreeMultiplication.h"
-#include "BlindlyThreadedTreeMultiplication.h"
 #include <assert.h>
 #include <memory>
-
 
 class MultiplicationStrategyFactory {
   public:
@@ -24,7 +23,6 @@ class MultiplicationStrategyFactory {
             auto ptr = std::make_unique<OFfsetTreeMultiplication>();
             return std::move(ptr);
         }
-
         case BLINDLY_THREADED_TREE: {
             auto ptr = std::make_unique<BlindlyThreadedTreeMultiplication>();
             return std::move(ptr);
@@ -32,9 +30,6 @@ class MultiplicationStrategyFactory {
         case LATE_COMPARISON: {
             auto ptr = std::make_unique<LateComparisonMultiplication>();
             return std::move(ptr);
-        }
-
-        case SIMPLE_ITERATION: {
         }
         case TUPLE_ITERATION: {
             auto ptr = std::make_unique<TupleIteratorMultiplication>();

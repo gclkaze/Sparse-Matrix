@@ -28,6 +28,7 @@ class SparseMatrix : public ISparseMatrix {
     std::unique_ptr<std::atomic_flag> m_Lock;
     size_t m_RangeElementsPerThread = 20;
     MultiplicationTypes m_MultiplicationType = RANGED_TREE_THREADED;
+
   public:
     std::vector<FlatNode> &getNodes() override { return m_Nodes; };
     std::vector<FlatChildEntry> &getFlatChildren() override {
@@ -84,6 +85,7 @@ class SparseMatrix : public ISparseMatrix {
     SparseMatrixIterator iterator() {
         return SparseMatrixIterator(&m_Nodes, &m_FlatChildren, m_Size);
     }
+
     bool insert(const std::vector<int> &tuple, double value) override {
         while (m_Lock->test_and_set(std::memory_order_acquire))
             ;
@@ -191,51 +193,14 @@ class SparseMatrix : public ISparseMatrix {
         return true;
     }
 
-    SparseMatrix newMultiplication(SparseMatrix &other) {
-        auto ptr =
-            MultiplicationStrategyFactory::createMultiplication(OFFSET_TREE);
-        SparseMatrix result;
-        ptr.get()->multiply(this, &other, &result);
-        return result;
-    }
-
-    SparseMatrix newThreadedMultiplication(SparseMatrix &other) {
-        auto ptr = MultiplicationStrategyFactory::createMultiplication(
-            BLINDLY_THREADED_TREE);
-        SparseMatrix result;
-        ptr.get()->multiply(this, &other, &result);
-        return result;
-    }
-
-    SparseMatrix newRangedThreadedMultiplication(SparseMatrix &other) {
-        auto ptr = MultiplicationStrategyFactory::createMultiplication(
-            RANGED_TREE_THREADED);
-        SparseMatrix result;
-        ptr.get()->multiply(this, &other, &result);
-        return result;
-    }
-
   public:
     void setMultiplicationStrategy(MultiplicationTypes type) {
-          m_MultiplicationType = type;
+        m_MultiplicationType = type;
     }
 
     SparseMatrix operator*(SparseMatrix &other) {
         auto ptr = MultiplicationStrategyFactory::createMultiplication(
-            TUPLE_ITERATION);
-        SparseMatrix result;
-        ptr.get()->multiply(this, &other, &result);
-
-/*  auto ptr = MultiplicationStrategyFactory::createMultiplication(
             m_MultiplicationType);
-        SparseMatrix result;
-        ptr.get()->multiply(this, &other, &result);*/
-        return result;
-    }
-
-    SparseMatrix oldMultiplication(SparseMatrix &other) {
-        auto ptr = MultiplicationStrategyFactory::createMultiplication(
-            LATE_COMPARISON);
         SparseMatrix result;
         ptr.get()->multiply(this, &other, &result);
         return result;

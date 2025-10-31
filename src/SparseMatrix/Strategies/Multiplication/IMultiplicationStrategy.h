@@ -55,7 +55,7 @@ class IMultiplicationStrategy {
         offsets.reserve(maxSize);
 
         // lets find common root nodes
-        int j = indicesRight[0];
+        int j = 0;//indicesRight[0];
         for (int i = 0; i < maxOffsetLeft; i++) {
             int indexLeft = indicesLeft[i];
             if (j < maxOffsetRight && indexLeft < indicesRight[j]) {

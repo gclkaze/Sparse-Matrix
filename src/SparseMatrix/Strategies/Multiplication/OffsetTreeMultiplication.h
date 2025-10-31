@@ -2,7 +2,7 @@
 #define OFFSET_TREE_MULTIPLICATION_H
 #include "../../CommonOffset.h"
 #include "IMultiplicationStrategy.h"
-
+#include <memory>
 class OFfsetTreeMultiplication : public IMultiplicationStrategy {
   private:
     size_t m_RangeElementsPerThread = 20;

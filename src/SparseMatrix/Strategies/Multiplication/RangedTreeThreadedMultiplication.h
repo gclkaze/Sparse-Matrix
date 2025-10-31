@@ -77,7 +77,7 @@ class RangedTreeThreadedMultiplication : public IMultiplicationStrategy {
         std::vector<CommonOffset> offsets;
         offsets.reserve(m_RangeElementsPerThread);
 
-        int j = indicesRight[0];
+        int j = indicesRightPos[0];
         for (int i = 0; i < maxOffsetLeft; i++) {
             int indexLeft = indicesLeft[i];
             if (j < maxOffsetRight && indexLeft < indicesRight[j]) {

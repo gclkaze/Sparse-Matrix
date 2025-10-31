@@ -2,7 +2,7 @@
 #define BLINDLY_THREADED_TREE_MULTIPLICATION_H
 #include "../../CommonOffset.h"
 #include "IMultiplicationStrategy.h"
-
+#include <thread>
 class BlindlyThreadedTreeMultiplication : public IMultiplicationStrategy {
 
   public:

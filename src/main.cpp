@@ -23,22 +23,17 @@ void testMultiplicationNewPerf();
 void testParallelThreadedMultiplication();
 
 int main() {
-/*   testInsert();
+    testInsert();
     testDelete();
     testIterator();
     testIteratorPerf();
     testMultiplication();
-
     testMultiplicationPerfMulti();
-
     testMultiplicationNew();
-   testMultiplicationNewPerf();*/
-
-     testParallelThreadedMultiplication();
-/*
-
+    testMultiplicationNewPerf();
+    testParallelThreadedMultiplication();
     testMultiplicationPerf();
-*/
+
     std::cout << "End of Tests!" << std::endl;
 }
 
@@ -89,7 +84,9 @@ void testParallelThreadedMultiplication() {
 
     t1 = high_resolution_clock::now();
     for (int i = 0; i < executionTimes; i++) {
-        SparseMatrix C = A.newThreadedMultiplication(B);
+        A.setMultiplicationStrategy(BLINDLY_THREADED_TREE);
+        SparseMatrix C = A * B;
+        A.setMultiplicationStrategy(TUPLE_ITERATION);
         SparseMatrix D = A * B;
         assert(C == D);
     }
@@ -149,7 +146,9 @@ void testMultiplicationNew() {
 
     t1 = high_resolution_clock::now();
     for (int i = 0; i < executionTimes; i++) {
-        SparseMatrix C = A.newMultiplication(B);
+        A.setMultiplicationStrategy(OFFSET_TREE);
+        SparseMatrix C = A * B;
+        A.setMultiplicationStrategy(TUPLE_ITERATION);
         SparseMatrix D = A * B;
         assert(C == D);
     }
@@ -209,10 +208,11 @@ void testMultiplicationNewPerf() {
     std::cout << "Tree Multiplication start!" << std::endl;
     t1 = high_resolution_clock::now();
     for (int i = 0; i < executionTimes; i++) {
-        SparseMatrix C = A.newThreadedMultiplication(B);
-        //    SparseMatrix D = A * B;
-        //   assert(C == D);
-        //   std::cout << C.size() << std::endl;
+        A.setMultiplicationStrategy(BLINDLY_THREADED_TREE);
+        SparseMatrix C = A * B;
+        A.setMultiplicationStrategy(TUPLE_ITERATION);
+        SparseMatrix D = A * B;
+        assert(C == D);
     }
     t2 = high_resolution_clock::now();
     ms_int = duration_cast<milliseconds>(t2 - t1);
@@ -225,9 +225,11 @@ void testMultiplicationNewPerf() {
     std::cout << "Ranged Tree Multiplication start!" << std::endl;
     t1 = high_resolution_clock::now();
     for (int i = 0; i < executionTimes; i++) {
-        SparseMatrix C = A.newRangedThreadedMultiplication(B);
-          SparseMatrix D = A * B;
-          assert(C == D);
+        A.setMultiplicationStrategy(RANGED_TREE_THREADED);
+        SparseMatrix C = A * B;
+        A.setMultiplicationStrategy(TUPLE_ITERATION);
+        SparseMatrix D = A * B;
+        assert(C == D);
     }
 
     t2 = high_resolution_clock::now();
@@ -240,9 +242,10 @@ void testMultiplicationNewPerf() {
     std::cout << "Old Multiplication started!" << std::endl;
 
     t1 = high_resolution_clock::now();
+    A.setMultiplicationStrategy(TUPLE_ITERATION);
+
     for (int i = 0; i < executionTimes; i++) {
         SparseMatrix D = A * B;
-        //          std::cout << D.size() << std::endl;
     }
 
     t2 = high_resolution_clock::now();
@@ -300,6 +303,7 @@ void testMultiplicationPerfMulti() {
     std::cout << "Matrix construction ended!" << std::endl;
 
     t1 = high_resolution_clock::now();
+    B.setMultiplicationStrategy(TUPLE_ITERATION);
     for (int i = 0; i < executionTimes; i++) {
         SparseMatrix C = B * A;
     }
@@ -312,8 +316,10 @@ void testMultiplicationPerfMulti() {
     std::cout << "New Multiplication ended!" << std::endl;
 
     t1 = high_resolution_clock::now();
+    B.setMultiplicationStrategy(LATE_COMPARISON);
+
     for (int i = 0; i < executionTimes; i++) {
-        SparseMatrix C = B.oldMultiplication(A);
+        SparseMatrix C = B * A; //.oldMultiplication(A);
     }
     t2 = high_resolution_clock::now();
     ms_int = duration_cast<milliseconds>(t2 - t1);
@@ -395,7 +401,8 @@ void testMultiplicationPerf() {
         std::cout << "OLD Multiplication started!" << std::endl;
         t1 = high_resolution_clock::now();
 
-        SparseMatrix OC = A.oldMultiplication(B);
+        A.setMultiplicationStrategy(LATE_COMPARISON);
+        SparseMatrix OC = A * B; // A.oldMultiplication(B);
 
         t2 = high_resolution_clock::now();
         ms_int = duration_cast<milliseconds>(t2 - t1);
@@ -407,17 +414,18 @@ void testMultiplicationPerf() {
         for (const SparseMatrixTuple &tuple : iteratorD) {
             assertTupleEquality(tuple, groundTruth[i++]);
         }
-       assert(i == (int)groundTruth.size());
+        assert(i == (int)groundTruth.size());
         std::cout << ms_int.count() << "ms\n";
         std::cout << ms_double.count() << "ms\n";
         std::cout << "OLD Multiplication ended!" << std::endl;
     }
- 
+
     {
         std::cout << "Blindly Threaded Multiplication started!" << std::endl;
         t1 = high_resolution_clock::now();
 
-        SparseMatrix OC = A.newThreadedMultiplication(B);
+        A.setMultiplicationStrategy(BLINDLY_THREADED_TREE);
+        SparseMatrix OC = A * B;
 
         t2 = high_resolution_clock::now();
         ms_int = duration_cast<milliseconds>(t2 - t1);
@@ -434,11 +442,12 @@ void testMultiplicationPerf() {
         std::cout << ms_double.count() << "ms\n";
         std::cout << "Blindly Threaded Multiplication ended!" << std::endl;
     }
-       {
+    {
         std::cout << "Ranged Multiplication started!" << std::endl;
         t1 = high_resolution_clock::now();
 
-        SparseMatrix OC = A.newRangedThreadedMultiplication(B);
+        A.setMultiplicationStrategy(RANGED_TREE_THREADED);
+        SparseMatrix OC = A * B; 
 
         t2 = high_resolution_clock::now();
         ms_int = duration_cast<milliseconds>(t2 - t1);
@@ -460,7 +469,8 @@ void testMultiplicationPerf() {
         std::cout << "New Multiplication started!" << std::endl;
         t1 = high_resolution_clock::now();
 
-        SparseMatrix OC = A.newMultiplication(B);
+        A.setMultiplicationStrategy(OFFSET_TREE);
+        SparseMatrix OC = A * B; 
 
         t2 = high_resolution_clock::now();
         ms_int = duration_cast<milliseconds>(t2 - t1);
@@ -478,7 +488,6 @@ void testMultiplicationPerf() {
         std::cout << ms_double.count() << "ms\n";
         std::cout << "New Multiplication ended!" << std::endl;
     }
-
 }
 
 void testMultiplication() {
@@ -495,6 +504,7 @@ void testMultiplication() {
     B.insert({1, 20, 1}, 4);
     B.insert({50, 2, 1}, 5);
 
+    // A.setMultiplicationStrategy(TUPLE_ITERATION);
     SparseMatrix C = A * B;
     SparseMatrixIterator iterator = C.iterator();
 
