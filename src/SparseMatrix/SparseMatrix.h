@@ -193,7 +193,6 @@ class SparseMatrix : public ISparseMatrix {
         return true;
     }
 
-  public:
     void setMultiplicationStrategy(MultiplicationTypes type) {
         m_MultiplicationType = type;
     }
@@ -499,33 +498,6 @@ class SparseMatrix : public ISparseMatrix {
         return i;
     }
 
-  public:
-    double getValue(const std::vector<int> &tuple) override {
-        FlatNode *current = &m_Nodes[0];
-        SearchStatus status = none;
-        int nodeIndex = -1;
-        int foundChild = -1;
-        int tupleSize = static_cast<int>(tuple.size());
-
-        for (int i = 0; i < tupleSize; i++) {
-            foundChild = findTuple(tuple[i], current->numChildren,
-                                   current->childOffset, &status);
-            if (status != equal) {
-                return 0.0f;
-            }
-            status = none;
-            nodeIndex = m_FlatChildren[foundChild].nodeIndex;
-            current = &m_Nodes[nodeIndex];
-
-            if (current->isLeaf && i == tupleSize - 1) {
-                // we found it
-                return current->value;
-            }
-        }
-        return 0.0;
-    }
-
-  private:
     int findTuple(const int tupleKey, const int numChildren,
                   const int entryIndex, SearchStatus *status) {
 
@@ -553,6 +525,31 @@ class SparseMatrix : public ISparseMatrix {
     }
 
   public:
+    double getValue(const std::vector<int> &tuple) override {
+        FlatNode *current = &m_Nodes[0];
+        SearchStatus status = none;
+        int nodeIndex = -1;
+        int foundChild = -1;
+        int tupleSize = static_cast<int>(tuple.size());
+
+        for (int i = 0; i < tupleSize; i++) {
+            foundChild = findTuple(tuple[i], current->numChildren,
+                                   current->childOffset, &status);
+            if (status != equal) {
+                return 0.0f;
+            }
+            status = none;
+            nodeIndex = m_FlatChildren[foundChild].nodeIndex;
+            current = &m_Nodes[nodeIndex];
+
+            if (current->isLeaf && i == tupleSize - 1) {
+                // we found it
+                return current->value;
+            }
+        }
+        return 0.0;
+    }
+
     bool
     assertFlatChildrenValues(const std::vector<std::vector<int>> &children) {
         /*    std::cout << children.size() << std::endl;
