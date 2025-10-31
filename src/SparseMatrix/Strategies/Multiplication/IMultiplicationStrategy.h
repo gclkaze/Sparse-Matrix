@@ -1,20 +1,25 @@
 #ifndef IMULTIPLICATION_STRATEGY_H
 #define IMULTIPLICATION_STRATEGY_H
 #include "../../ISparseMatrix.h"
-#include <vector>
 #include <assert.h>
+#include <vector>
+
 
 class IMultiplicationStrategy {
     friend class SparseMatrix;
-    protected :
-       int m_Multi = 0;
-    public:
-    virtual ISparseMatrix* multiply( ISparseMatrix *A,   ISparseMatrix *B, ISparseMatrix *C) = 0;
+
+  protected:
+    int m_Multi = 0;
+
+  public:
+    virtual ISparseMatrix *multiply(ISparseMatrix *A, ISparseMatrix *B,
+                                    ISparseMatrix *C) = 0;
     virtual ~IMultiplicationStrategy() {}
 
-    void reduceTree(  FlatNode &visitLeft,    FlatNode &visitRight,  ISparseMatrix *me,
-                    ISparseMatrix *other, ISparseMatrix *destination,
-                    std::vector<int> *currentTuple, int tupleMaxSize) {
+    void reduceTree(FlatNode &visitLeft, FlatNode &visitRight,
+                    ISparseMatrix *me, ISparseMatrix *other,
+                    ISparseMatrix *destination, std::vector<int> *currentTuple,
+                    int tupleMaxSize) {
         int offsetLeft = visitLeft.childOffset;
         int maxOffsetLeft = visitLeft.numChildren;
 
@@ -24,7 +29,7 @@ class IMultiplicationStrategy {
         std::vector<int> indicesLeftPos;
         indicesLeftPos.reserve(maxOffsetLeft);
 
-         std::vector<FlatChildEntry>& myflatChildren = me->getFlatChildren();
+        std::vector<FlatChildEntry> &myflatChildren = me->getFlatChildren();
 
         for (int i = offsetLeft; i < offsetLeft + maxOffsetLeft; i++) {
             indicesLeft.push_back(myflatChildren[i].tupleIndex);
@@ -40,7 +45,7 @@ class IMultiplicationStrategy {
         std::vector<int> indicesRightPos;
         indicesRightPos.reserve(maxOffsetRight);
 
-        std::vector<FlatChildEntry>& flatChildren = other->getFlatChildren();
+        std::vector<FlatChildEntry> &flatChildren = other->getFlatChildren();
 
         for (int i = offsetRight; i < offsetRight + maxOffsetRight; i++) {
             indicesRight.push_back(flatChildren[i].tupleIndex);
@@ -54,7 +59,7 @@ class IMultiplicationStrategy {
         offsets.reserve(maxSize);
 
         // lets find common root nodes
-        int j = 0;//indicesRight[0];
+        int j = 0; // indicesRight[0];
         for (int i = 0; i < maxOffsetLeft; i++) {
             int indexLeft = indicesLeft[i];
             if (j < maxOffsetRight && indexLeft < indicesRight[j]) {
@@ -78,8 +83,8 @@ class IMultiplicationStrategy {
         indicesLeftPos.clear();
         indicesRightPos.clear();
 
-        const std::vector<FlatNode>& myNodes = me->getNodes();
-        const std::vector<FlatNode>& otherNodes = other->getNodes();
+        const std::vector<FlatNode> &myNodes = me->getNodes();
+        const std::vector<FlatNode> &otherNodes = other->getNodes();
 
         for (const CommonOffset &offset : offsets) {
             int left = offset.indexLeft;
@@ -90,7 +95,6 @@ class IMultiplicationStrategy {
 
             visitLeft = (myNodes)[leftNode];
             visitRight = (otherNodes)[rightNode];
-
 
             if (visitLeft.isLeaf && visitRight.isLeaf) {
                 // do the operation
@@ -105,8 +109,8 @@ class IMultiplicationStrategy {
 
             assert(!visitLeft.isLeaf && !visitRight.isLeaf);
             currentTuple->push_back(offset.tupleKey);
-            reduceTree(visitLeft, visitRight, me, other, destination, currentTuple,
-                       tupleMaxSize + 1);
+            reduceTree(visitLeft, visitRight, me, other, destination,
+                       currentTuple, tupleMaxSize + 1);
             currentTuple->pop_back();
         }
 

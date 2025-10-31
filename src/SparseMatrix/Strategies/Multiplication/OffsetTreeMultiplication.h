@@ -52,6 +52,16 @@ class OFfsetTreeMultiplication : public IMultiplicationStrategy {
             visitRight = (otherNodes)[rightNode];
 
             t.push_back(offset.tupleKey);
+            
+            if (visitLeft.isLeaf && visitRight.isLeaf) {
+                // do the operation
+                m_Multi++;
+                double result = visitLeft.value * visitRight.value;
+                C->insert(t, result);
+                t.pop_back();
+                continue;
+            }
+
             reduceTree(visitLeft, visitRight, A, B,C, &t, 1);
             t.pop_back();
         }

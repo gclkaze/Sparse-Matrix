@@ -4,8 +4,9 @@
 #include "../../CommonOffset.h"
 #include "../../FlatNode.h"
 #include "IMultiplicationStrategy.h"
-#include <vector>
 #include <thread>
+#include <vector>
+
 
 class RangedTreeThreadedMultiplication : public IMultiplicationStrategy {
   private:
@@ -14,14 +15,15 @@ class RangedTreeThreadedMultiplication : public IMultiplicationStrategy {
   public:
     ~RangedTreeThreadedMultiplication() {}
 
-    ISparseMatrix* multiply( ISparseMatrix *A,  ISparseMatrix *B,ISparseMatrix *C) {
+    ISparseMatrix *multiply(ISparseMatrix *A, ISparseMatrix *B,
+                            ISparseMatrix *C) {
 
         m_Multi = 0;
         if (A->size() == 0 || B->size() == 0) {
             return C;
         }
 
-        FlatNode visitLeft =  A->getNodes()[0];
+        FlatNode visitLeft = A->getNodes()[0];
         FlatNode visitRight = B->getNodes()[0];
 
         findRangedThreadedCommonIndices(visitLeft, visitRight, A, B, C);
@@ -32,8 +34,8 @@ class RangedTreeThreadedMultiplication : public IMultiplicationStrategy {
   private:
     void findRangedThreadedCommonIndices(FlatNode &visitLeft,
                                          FlatNode &visitRight,
-                                          ISparseMatrix *me,
-                                          ISparseMatrix *other,
+                                         ISparseMatrix *me,
+                                         ISparseMatrix *other,
                                          ISparseMatrix *result) {
 
         int offsetLeft = visitLeft.childOffset;
@@ -45,7 +47,7 @@ class RangedTreeThreadedMultiplication : public IMultiplicationStrategy {
         std::vector<int> indicesLeftPos;
         indicesLeftPos.reserve(maxOffsetLeft);
 
-        std::vector<FlatChildEntry>& myflatChildren = me->getFlatChildren();
+        std::vector<FlatChildEntry> &myflatChildren = me->getFlatChildren();
 
         for (int i = offsetLeft; i < offsetLeft + maxOffsetLeft; i++) {
             indicesLeft.push_back(myflatChildren[i].tupleIndex);
@@ -61,7 +63,8 @@ class RangedTreeThreadedMultiplication : public IMultiplicationStrategy {
         std::vector<int> indicesRightPos;
         indicesRightPos.reserve(maxOffsetRight);
 
-        std::vector<FlatChildEntry>& otherflatChildren = other->getFlatChildren();
+        std::vector<FlatChildEntry> &otherflatChildren =
+            other->getFlatChildren();
 
         for (int i = offsetRight; i < offsetRight + maxOffsetRight; i++) {
             indicesRight.push_back(otherflatChildren[i].tupleIndex);
@@ -90,9 +93,9 @@ class RangedTreeThreadedMultiplication : public IMultiplicationStrategy {
                         {indicesLeftPos[i], indicesRightPos[j], indexRight});
 
                     if (offsets.size() == m_RangeElementsPerThread) {
-                         workers.emplace_back(
-                           RangedTreeThreadedMultiplication::parallelRangedMultiplication, this,
-                            offsets,  me, other, result);
+                        workers.emplace_back(RangedTreeThreadedMultiplication::
+                                                 parallelRangedMultiplication,
+                                             this, offsets, me, other, result);
 
                         offsets.clear();
                     }
@@ -106,8 +109,9 @@ class RangedTreeThreadedMultiplication : public IMultiplicationStrategy {
         }
 
         if (!offsets.empty()) {
-         workers.emplace_back(RangedTreeThreadedMultiplication::parallelRangedMultiplication,
-                                 this, offsets, me, other, result);
+            workers.emplace_back(
+                RangedTreeThreadedMultiplication::parallelRangedMultiplication,
+                this, offsets, me, other, result);
         }
 
         for (auto &t : workers) {
@@ -119,15 +123,14 @@ class RangedTreeThreadedMultiplication : public IMultiplicationStrategy {
     }
 
     void parallelRangedMultiplication(std::vector<CommonOffset> offsets,
-                                       ISparseMatrix *me,
-                                       ISparseMatrix *other,
+                                      ISparseMatrix *me, ISparseMatrix *other,
                                       ISparseMatrix *destination) {
 
-         const std::vector<FlatNode>& myNodes = me->getNodes();
-         const  std::vector<FlatNode>& otherNodes = other->getNodes();
+        const std::vector<FlatNode> &myNodes = me->getNodes();
+        const std::vector<FlatNode> &otherNodes = other->getNodes();
 
-         std::vector<FlatChildEntry>& flatChildren = me->getFlatChildren();
-         std::vector<FlatChildEntry>& otherChildren = other->getFlatChildren();
+        std::vector<FlatChildEntry> &flatChildren = me->getFlatChildren();
+        std::vector<FlatChildEntry> &otherChildren = other->getFlatChildren();
 
         for (const CommonOffset &offset : offsets) {
             std::vector<int> t;
@@ -142,7 +145,17 @@ class RangedTreeThreadedMultiplication : public IMultiplicationStrategy {
             FlatNode visitRight = otherNodes[rightNode];
 
             t.push_back(offset.tupleKey);
-            reduceTree(visitLeft, visitRight,me, other, destination, &t, 1);
+
+            if (visitLeft.isLeaf && visitRight.isLeaf) {
+                // do the operation
+                m_Multi++;
+                double result = visitLeft.value * visitRight.value;
+                destination->insert(t, result);
+                t.pop_back();
+                continue;
+            }
+
+            reduceTree(visitLeft, visitRight, me, other, destination, &t, 1);
             t.pop_back();
         }
     }

@@ -21,20 +21,80 @@ void testMultiplicationPerfMulti();
 void testMultiplicationNew();
 void testMultiplicationNewPerf();
 void testParallelThreadedMultiplication();
+void testParallelThreadedMultiplicationOneDim();
 
 int main() {
-    testInsert();
-    testDelete();
-    testIterator();
-    testIteratorPerf();
-    testMultiplication();
-    testMultiplicationPerfMulti();
-    testMultiplicationNew();
-    testMultiplicationNewPerf();
-    testParallelThreadedMultiplication();
-    testMultiplicationPerf();
-
+    /*    testInsert();
+        testDelete();
+        testIterator();
+        testIteratorPerf();
+        testMultiplication();
+        testMultiplicationPerfMulti();
+        testMultiplicationNew();*/
+    //  testMultiplicationNewPerf();
+    /*   testParallelThreadedMultiplication();
+       testMultiplicationPerf();
+   */
+    testParallelThreadedMultiplicationOneDim();
     std::cout << "End of Tests!" << std::endl;
+}
+
+void testParallelThreadedMultiplicationOneDim() {
+    auto t1 = high_resolution_clock::now();
+    SparseMatrix A;
+    int I = 100000;
+    int stride = 4;
+    int executionTimes = 1;
+    int aSize = 0;
+    int bSize = 0;
+    std::cout << "Matrix construction started!" << std::endl;
+
+    // dense
+    for (int i = 0; i < I; i++) {
+        A.insert({i}, (i + 1));
+        aSize++;
+    }
+
+    // sparse
+    SparseMatrix B;
+    std::vector<SparseMatrixTuple> groundTruth;
+
+    for (int i = 0; i < I; i += stride) {
+        B.insert({i}, 2);
+        groundTruth.push_back({{i}, 2.0 * (i + 1)});
+        bSize++;
+    }
+
+    auto t2 = high_resolution_clock::now();
+    auto ms_int = duration_cast<milliseconds>(t2 - t1);
+
+    duration<double, std::milli> ms_double = t2 - t1;
+    std::cout << "A size = " << aSize << std::endl;
+    std::cout << "B size = " << bSize << std::endl;
+
+    std::cout << "Matrix construction ended!" << std::endl;
+
+    t1 = high_resolution_clock::now();
+    for (int i = 0; i < executionTimes; i++) {
+        SparseMatrix C = A * B;
+       A.setMultiplicationStrategy(TUPLE_ITERATION);
+        SparseMatrix D = A * B;
+        assert(C == D);
+        A.setMultiplicationStrategy(OFFSET_TREE);
+        SparseMatrix E = A * B;
+        assert(E == D);
+        A.setMultiplicationStrategy(BLINDLY_THREADED_TREE);
+        SparseMatrix Z = A * B;
+        assert(Z == D);
+        assert(D.size() == bSize && Z.size() == bSize);    
+    }
+    t2 = high_resolution_clock::now();
+    ms_int = duration_cast<milliseconds>(t2 - t1);
+
+    ms_double = t2 - t1;
+    std::cout << ms_int.count() << "ms\n";
+    std::cout << ms_double.count() << "ms\n";
+    std::cout << "Test completed, Matrices are equal!" << std::endl;
 }
 
 void testParallelThreadedMultiplication() {
@@ -447,7 +507,7 @@ void testMultiplicationPerf() {
         t1 = high_resolution_clock::now();
 
         A.setMultiplicationStrategy(RANGED_TREE_THREADED);
-        SparseMatrix OC = A * B; 
+        SparseMatrix OC = A * B;
 
         t2 = high_resolution_clock::now();
         ms_int = duration_cast<milliseconds>(t2 - t1);
@@ -470,7 +530,7 @@ void testMultiplicationPerf() {
         t1 = high_resolution_clock::now();
 
         A.setMultiplicationStrategy(OFFSET_TREE);
-        SparseMatrix OC = A * B; 
+        SparseMatrix OC = A * B;
 
         t2 = high_resolution_clock::now();
         ms_int = duration_cast<milliseconds>(t2 - t1);
@@ -504,7 +564,6 @@ void testMultiplication() {
     B.insert({1, 20, 1}, 4);
     B.insert({50, 2, 1}, 5);
 
-    // A.setMultiplicationStrategy(TUPLE_ITERATION);
     SparseMatrix C = A * B;
     SparseMatrixIterator iterator = C.iterator();
 
@@ -533,16 +592,7 @@ void testIterator() {
     A.insert({1, 1, 1}, 1);
     A.insert({10, 6, 1}, 9);
     A.insert({1, 3, 1}, 10);
-    /*
-        A.insert({1,1,4},4);
-        A.insert({1,1,5},5);
-        A.insert({1,1,6},6);
 
-        A.insert({1,1,1},1);
-        A.insert({1,1,2},2);
-        A.insert({1,1,3},3);
-
-    A.insert({255,2,222},7);*/
     std::vector<SparseMatrixTuple> groundTruth;
     groundTruth.push_back({{1, 1, 1}, 1});
     groundTruth.push_back({{1, 1, 10}, 2});

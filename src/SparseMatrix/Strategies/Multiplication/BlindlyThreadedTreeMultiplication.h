@@ -18,13 +18,14 @@ class BlindlyThreadedTreeMultiplication : public IMultiplicationStrategy {
         FlatNode visitLeft = A->getNodes()[0];
         FlatNode visitRight = B->getNodes()[0];
 
-        findThreadedCommonIndices(visitLeft, visitRight, A, B,C);
+        findThreadedCommonIndices(visitLeft, visitRight, A, B, C);
         return C;
     }
 
   private:
     void findThreadedCommonIndices(FlatNode &visitLeft, FlatNode &visitRight,
-                                   ISparseMatrix *me, ISparseMatrix *other, ISparseMatrix *result) {
+                                   ISparseMatrix *me, ISparseMatrix *other,
+                                   ISparseMatrix *result) {
 
         int offsetLeft = visitLeft.childOffset;
         int maxOffsetLeft = visitLeft.numChildren;
@@ -76,8 +77,8 @@ class BlindlyThreadedTreeMultiplication : public IMultiplicationStrategy {
                     workers.emplace_back(BlindlyThreadedTreeMultiplication::
                                              parallelMultiplication,
                                          this, indicesLeftPos[i],
-                                         indicesRightPos[j], indexRight, me, other,
-                                         result);
+                                         indicesRightPos[j], indexRight, me,
+                                         other, result);
 
                     j++;
                     break;
@@ -105,11 +106,11 @@ class BlindlyThreadedTreeMultiplication : public IMultiplicationStrategy {
                                 ISparseMatrix *destination) {
         std::vector<int> t;
 
-         const std::vector<FlatNode>& myNodes = me->getNodes();
-         const  std::vector<FlatNode>& otherNodes = other->getNodes();
+        const std::vector<FlatNode> &myNodes = me->getNodes();
+        const std::vector<FlatNode> &otherNodes = other->getNodes();
 
-         std::vector<FlatChildEntry>& flatChildren = me->getFlatChildren();
-         std::vector<FlatChildEntry>& otherChildren = other->getFlatChildren();
+        std::vector<FlatChildEntry> &flatChildren = me->getFlatChildren();
+        std::vector<FlatChildEntry> &otherChildren = other->getFlatChildren();
 
         int left = indexLeft;
         int right = indexRight;
@@ -121,6 +122,14 @@ class BlindlyThreadedTreeMultiplication : public IMultiplicationStrategy {
         FlatNode visitRight = otherNodes[rightNode];
 
         t.push_back(key);
+        if (visitLeft.isLeaf && visitRight.isLeaf) {
+            // do the operation
+            m_Multi++;
+            double result = visitLeft.value * visitRight.value;
+            destination->insert(t, result);
+            t.pop_back();
+            return;
+        }
         reduceTree(visitLeft, visitRight, me, other, destination, &t, 1);
         t.pop_back();
     }
