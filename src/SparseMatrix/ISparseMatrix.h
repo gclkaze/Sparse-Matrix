@@ -3,11 +3,13 @@
 //#include "../IMatrix.h"
 #include <vector>
 #include "FlatNode.h"
+#include "SparseMatrixIterator.h"
 
 class ISparseMatrix /*: virtual public IMatrix*/ {
   public:
-    virtual std::vector<FlatNode> &getNodes() = 0;
-    virtual std::vector<FlatChildEntry> &getFlatChildren() = 0;
+  virtual SparseMatrixIterator iterator() = 0;
+    virtual std::vector<FlatNode>& getNodes() = 0;
+    virtual std::vector<FlatChildEntry>& getFlatChildren() = 0;
     virtual const int size() const = 0;
     virtual ~ISparseMatrix() {}
 

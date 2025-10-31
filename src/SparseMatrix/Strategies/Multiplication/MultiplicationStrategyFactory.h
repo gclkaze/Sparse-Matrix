@@ -3,6 +3,7 @@
 //#include "IMultiplicationStrategy.h"
 #include "MultiplicationTypes.h"
 #include "RangedTreeThreadedMultiplication.h"
+#include "TupleIteratorMultiplication.h"
 #include <assert.h>
 #include <memory>
 
@@ -12,14 +13,18 @@ class MultiplicationStrategyFactory {
     createMultiplication(MultiplicationTypes type) {
         switch (type) {
         case RANGED_TREE_THREADED: {
-            auto ptr = std::make_unique<RangedTreeThreadedMultiplication>();
-            
+            auto ptr = std::make_unique<RangedTreeThreadedMultiplication>();            
             return std::move(ptr);
         }
         case BLINDLY_THREADED: {
             assert(false);
         }
         case SIMPLE_ITERATION: {
+        }
+        case TUPLE_ITERATION:{
+            auto ptr = std::make_unique<TupleIteratorMultiplication>();            
+            return std::move(ptr);
+
         }
         default: {
             assert(false);

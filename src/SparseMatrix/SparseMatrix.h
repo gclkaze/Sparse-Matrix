@@ -249,29 +249,12 @@ class SparseMatrix : public ISparseMatrix {
         return result;
     }
 
-    SparseMatrix newRangedThreadedMultiplication( SparseMatrix &other) {
-        /*        SparseMatrix result;
-                if (m_Size == 0 || other.m_Size == 0) {
-                    return result;
-                }
-
-                FlatNode *visitLeft = &(m_Nodes)[0];
-                std::vector<FlatNode> *o = &(other.m_Nodes);
-                FlatNode *visitRight = &(*o)[0];
-
-                findRangedThreadedCommonIndices(visitLeft, visitRight, other,
-           &result);
-        */
-
+    SparseMatrix newRangedThreadedMultiplication(SparseMatrix &other) {
         auto ptr = MultiplicationStrategyFactory::createMultiplication(
             RANGED_TREE_THREADED);
-
-         SparseMatrix result;
-       //     SparseMatrix *p = new SparseMatrix();
-          ptr.get()->multiply(this, &other, &result);
-
+        SparseMatrix result;
+        ptr.get()->multiply(this, &other, &result);
         return result;
-        //        return result;
     }
 
   private:
@@ -444,89 +427,6 @@ class SparseMatrix : public ISparseMatrix {
         return;
     }
 
-    void findRangedThreadedCommonIndices(FlatNode *visitLeft,
-                                         FlatNode *visitRight,
-                                         SparseMatrix &other,
-                                         SparseMatrix *result) {
-
-        int offsetLeft = visitLeft->childOffset;
-        int maxOffsetLeft = visitLeft->numChildren;
-
-        std::vector<int> indicesLeft;
-        indicesLeft.reserve(maxOffsetLeft);
-
-        std::vector<int> indicesLeftPos;
-        indicesLeftPos.reserve(maxOffsetLeft);
-
-        for (int i = offsetLeft; i < offsetLeft + maxOffsetLeft; i++) {
-            indicesLeft.push_back(m_FlatChildren[i].tupleIndex);
-            indicesLeftPos.push_back(i);
-        }
-
-        int offsetRight = visitRight->childOffset;
-        int maxOffsetRight = visitRight->numChildren;
-
-        std::vector<int> indicesRight;
-        indicesRight.reserve(maxOffsetRight);
-
-        std::vector<int> indicesRightPos;
-        indicesRightPos.reserve(maxOffsetRight);
-
-        for (int i = offsetRight; i < offsetRight + maxOffsetRight; i++) {
-            indicesRight.push_back(other.m_FlatChildren[i].tupleIndex);
-            indicesRightPos.push_back(i);
-        }
-
-        int maxSize =
-            maxOffsetLeft < maxOffsetRight ? maxOffsetRight : maxOffsetLeft;
-
-        std::vector<std::thread> workers;
-
-        // each thread, it handles m_RangeElementsPerThread indices
-        std::vector<CommonOffset> offsets;
-        offsets.reserve(m_RangeElementsPerThread);
-
-        int j = indicesRight[0];
-        for (int i = 0; i < maxOffsetLeft; i++) {
-            int indexLeft = indicesLeft[i];
-            if (j < maxOffsetRight && indexLeft < indicesRight[j]) {
-                continue;
-            }
-            for (; j < maxOffsetRight; j++) {
-                int indexRight = indicesRight[j];
-                if (indexLeft == indexRight) {
-                    offsets.push_back(
-                        {indicesLeftPos[i], indicesRightPos[j], indexRight});
-
-                    if (offsets.size() == m_RangeElementsPerThread) {
-                        workers.emplace_back(
-                            SparseMatrix::parallelRangedMultiplication, this,
-                            offsets, &other, result);
-
-                        offsets.clear();
-                    }
-                    j++;
-                    break;
-                }
-                if (indexLeft < indexRight) {
-                    break;
-                }
-            }
-        }
-
-        if (!offsets.empty()) {
-            workers.emplace_back(SparseMatrix::parallelRangedMultiplication,
-                                 this, offsets, &other, result);
-        }
-
-        for (auto &t : workers) {
-            if (t.joinable()) {
-                t.join();
-            }
-        }
-        return;
-    }
-
     void parallelMultiplication(int indexLeft, int indexRight, int key,
                                 SparseMatrix *other,
                                 SparseMatrix *destination) {
@@ -544,27 +444,6 @@ class SparseMatrix : public ISparseMatrix {
         t.push_back(key);
         reduceTree(visitLeft, visitRight, *other, destination, &t, 1);
         t.pop_back();
-    }
-
-    void parallelRangedMultiplication(std::vector<CommonOffset> offsets,
-                                      SparseMatrix *other,
-                                      SparseMatrix *destination) {
-        for (const CommonOffset &offset : offsets) {
-            std::vector<int> t;
-
-            int left = offset.indexLeft;
-            int right = offset.indexRight;
-
-            int leftNode = m_FlatChildren[left].nodeIndex;
-            int rightNode = other->m_FlatChildren[right].nodeIndex;
-
-            FlatNode *visitLeft = &(m_Nodes)[leftNode];
-            FlatNode *visitRight = &(other->m_Nodes)[rightNode];
-
-            t.push_back(offset.tupleKey);
-            reduceTree(visitLeft, visitRight, *other, destination, &t, 1);
-            t.pop_back();
-        }
     }
 
     std::unique_ptr<CommonOffsets> findCommonIndices(FlatNode *visitLeft,
@@ -625,51 +504,10 @@ class SparseMatrix : public ISparseMatrix {
 
   public:
     SparseMatrix operator*(SparseMatrix &other) {
-        SparseMatrixIterator it = iterator();
-        SparseMatrixIterator otherIt = other.iterator();
-
+        auto ptr = MultiplicationStrategyFactory::createMultiplication(
+            TUPLE_ITERATION);
         SparseMatrix result;
-        SparseMatrixTuple myTuple;
-        SparseMatrixTuple otherTuple;
-
-        bool myEnd = false;
-        bool otherEnd = false;
-        bool inserted = false;
-
-        myTuple = *it;
-        otherTuple = *otherIt;
-
-        while (true) {
-            if (myTuple == otherTuple) {
-                result.insert(myTuple.tuple, myTuple.value * otherTuple.value);
-                inserted = true;
-            }
-
-            myEnd = it.ended();
-            otherEnd = otherIt.ended();
-
-            if (!myEnd || !otherEnd) {
-                if (!inserted) {
-                    if (!myEnd && !otherEnd) {
-                        if (myTuple < otherTuple) {
-                            myTuple = *it;
-                        } else {
-                            otherTuple = *otherIt;
-                        }
-                    } else if (myEnd && !otherEnd) {
-                        otherTuple = *otherIt;
-                    } else if (!myEnd && otherEnd) {
-                        myTuple = *it;
-                    }
-                } else {
-                    myTuple = *it;
-                    otherTuple = *otherIt;
-                    inserted = false;
-                }
-            } else {
-                break;
-            }
-        }
+        ptr.get()->multiply(this, &other, &result);
         return result;
     }
 
@@ -686,7 +524,7 @@ class SparseMatrix : public ISparseMatrix {
 
         while (true) {
 
-            if (myEnd && otherEnd) {                
+            if (myEnd && otherEnd) {
                 break;
             } else if (!myEnd && otherEnd) {
                 myTuple = *it;

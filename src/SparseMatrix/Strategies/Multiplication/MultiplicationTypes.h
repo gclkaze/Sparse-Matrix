@@ -3,6 +3,7 @@
 enum MultiplicationTypes{
    RANGED_TREE_THREADED,
    BLINDLY_THREADED,
-   SIMPLE_ITERATION
+   SIMPLE_ITERATION,
+   TUPLE_ITERATION
 };
 #endif

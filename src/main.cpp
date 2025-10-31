@@ -383,10 +383,6 @@ void testMultiplicationPerf() {
         SparseMatrixIterator iterator = C.iterator();
         int i = 0;
         for (const SparseMatrixTuple &tuple : iterator) {
-            //       std::cout << "{" << tuple.tuple[0] << "," << tuple.tuple[1]
-            //       <<
-            //       "," << tuple.tuple[2] << "} := " << tuple.value <<
-            //       std::endl;
             assertTupleEquality(tuple, groundTruth[i++]);
         }
         assert(i == (int)groundTruth.size());
@@ -408,44 +404,16 @@ void testMultiplicationPerf() {
         SparseMatrixIterator iteratorD = OC.iterator();
         int i = 0;
         for (const SparseMatrixTuple &tuple : iteratorD) {
-            //       std::cout << "{" << tuple.tuple[0] << "," << tuple.tuple[1]
-            //       <<
-            //       "," << tuple.tuple[2] << "} := " << tuple.value <<
-            //       std::endl;
             assertTupleEquality(tuple, groundTruth[i++]);
         }
-      // assert(i == (int)groundTruth.size());
+       assert(i == (int)groundTruth.size());
         std::cout << ms_int.count() << "ms\n";
         std::cout << ms_double.count() << "ms\n";
         std::cout << "OLD Multiplication ended!" << std::endl;
     }
+ 
     {
-        std::cout << "Ranged Multiplication started!" << std::endl;
-        t1 = high_resolution_clock::now();
-
-        SparseMatrix OC = A.newRangedThreadedMultiplication(B);
-
-        t2 = high_resolution_clock::now();
-        ms_int = duration_cast<milliseconds>(t2 - t1);
-
-        ms_double = t2 - t1;
-
-        SparseMatrixIterator iteratorD = OC.iterator();
-        int i = 0;
-        for (const SparseMatrixTuple &tuple : iteratorD) {
-            //       std::cout << "{" << tuple.tuple[0] << "," << tuple.tuple[1]
-            //       <<
-            //       "," << tuple.tuple[2] << "} := " << tuple.value <<
-            //       std::endl;
-            assertTupleEquality(tuple, groundTruth[i++]);
-        }
-        assert(i == (int)groundTruth.size());
-        std::cout << ms_int.count() << "ms\n";
-        std::cout << ms_double.count() << "ms\n";
-        std::cout << "Ranged Multiplication ended!" << std::endl;
-    }
-    {
-      /*  std::cout << "Blindly Threaded Multiplication started!" << std::endl;
+        std::cout << "Blindly Threaded Multiplication started!" << std::endl;
         t1 = high_resolution_clock::now();
 
         SparseMatrix OC = A.newThreadedMultiplication(B);
@@ -463,7 +431,28 @@ void testMultiplicationPerf() {
         assert(i == (int)groundTruth.size());
         std::cout << ms_int.count() << "ms\n";
         std::cout << ms_double.count() << "ms\n";
-        std::cout << "Blindly Threaded Multiplication ended!" << std::endl;*/
+        std::cout << "Blindly Threaded Multiplication ended!" << std::endl;
+    }
+       {
+        std::cout << "Ranged Multiplication started!" << std::endl;
+        t1 = high_resolution_clock::now();
+
+        SparseMatrix OC = A.newRangedThreadedMultiplication(B);
+
+        t2 = high_resolution_clock::now();
+        ms_int = duration_cast<milliseconds>(t2 - t1);
+
+        ms_double = t2 - t1;
+
+        SparseMatrixIterator iteratorD = OC.iterator();
+        int i = 0;
+        for (const SparseMatrixTuple &tuple : iteratorD) {
+            assertTupleEquality(tuple, groundTruth[i++]);
+        }
+        assert(i == (int)groundTruth.size());
+        std::cout << ms_int.count() << "ms\n";
+        std::cout << ms_double.count() << "ms\n";
+        std::cout << "Ranged Multiplication ended!" << std::endl;
     }
 
     {
@@ -480,17 +469,15 @@ void testMultiplicationPerf() {
         SparseMatrixIterator iteratorD = OC.iterator();
         int i = 0;
         for (const SparseMatrixTuple &tuple : iteratorD) {
-            //       std::cout << "{" << tuple.tuple[0] << "," << tuple.tuple[1]
-            //       <<
-            //       "," << tuple.tuple[2] << "} := " << tuple.value <<
-            //       std::endl;
             assertTupleEquality(tuple, groundTruth[i++]);
         }
+        std::cout << i << std::endl;
         assert(i == (int)groundTruth.size());
         std::cout << ms_int.count() << "ms\n";
         std::cout << ms_double.count() << "ms\n";
         std::cout << "New Multiplication ended!" << std::endl;
     }
+
 }
 
 void testMultiplication() {

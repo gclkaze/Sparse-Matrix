@@ -17,14 +17,11 @@ class RangedTreeThreadedMultiplication : public IMultiplicationStrategy {
     ISparseMatrix* multiply( ISparseMatrix *A,  ISparseMatrix *B,ISparseMatrix *C) {
 
         m_Multi = 0;
-
-      //  SparseMatrix result;
         if (A->size() == 0 || B->size() == 0) {
             return C;
         }
 
         FlatNode &visitLeft =  A->getNodes()[0];
-        //        const std::vector<FlatNode> *o = &(B.m_Nodes);
         FlatNode &visitRight = B->getNodes()[0];
 
         findRangedThreadedCommonIndices(visitLeft, visitRight, A, B, C);
@@ -126,11 +123,11 @@ class RangedTreeThreadedMultiplication : public IMultiplicationStrategy {
                                        ISparseMatrix *other,
                                       ISparseMatrix *destination) {
 
-         std::vector<FlatNode> &myNodes = me->getNodes();
-         std::vector<FlatNode> &otherNodes = other->getNodes();
+         const std::vector<FlatNode>& myNodes = me->getNodes();
+         const  std::vector<FlatNode>& otherNodes = other->getNodes();
 
-         std::vector<FlatChildEntry> &flatChildren = me->getFlatChildren();
-         std::vector<FlatChildEntry> &otherChildren = other->getFlatChildren();
+         std::vector<FlatChildEntry>& flatChildren = me->getFlatChildren();
+         std::vector<FlatChildEntry>& otherChildren = other->getFlatChildren();
 
         for (const CommonOffset &offset : offsets) {
             std::vector<int> t;
@@ -141,11 +138,11 @@ class RangedTreeThreadedMultiplication : public IMultiplicationStrategy {
             int leftNode = flatChildren[left].nodeIndex;
             int rightNode = otherChildren[right].nodeIndex;
 
-            FlatNode &visitLeft = myNodes[leftNode];
-            FlatNode &visitRight = otherNodes[rightNode];
+            FlatNode visitLeft = myNodes[leftNode];
+            FlatNode visitRight = otherNodes[rightNode];
 
             t.push_back(offset.tupleKey);
-            reduceTree(visitLeft, visitRight,*me, *other, *destination, &t, 1);
+            reduceTree(visitLeft, visitRight,me, other, destination, &t, 1);
             t.pop_back();
         }
     }

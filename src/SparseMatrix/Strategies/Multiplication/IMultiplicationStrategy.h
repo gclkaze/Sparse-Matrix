@@ -13,8 +13,8 @@ class IMultiplicationStrategy {
     virtual ISparseMatrix* multiply( ISparseMatrix *A,   ISparseMatrix *B, ISparseMatrix *C) = 0;
     virtual ~IMultiplicationStrategy() {}
 
-    void reduceTree(  FlatNode &visitLeft,    FlatNode &visitRight,  ISparseMatrix &me,
-                    ISparseMatrix &other, ISparseMatrix &destination,
+    void reduceTree(  FlatNode &visitLeft,    FlatNode &visitRight,  ISparseMatrix *me,
+                    ISparseMatrix *other, ISparseMatrix *destination,
                     std::vector<int> *currentTuple, int tupleMaxSize) {
         int offsetLeft = visitLeft.childOffset;
         int maxOffsetLeft = visitLeft.numChildren;
@@ -25,7 +25,7 @@ class IMultiplicationStrategy {
         std::vector<int> indicesLeftPos;
         indicesLeftPos.reserve(maxOffsetLeft);
 
-         std::vector<FlatChildEntry> myflatChildren = me.getFlatChildren();
+         std::vector<FlatChildEntry>& myflatChildren = me->getFlatChildren();
 
         for (int i = offsetLeft; i < offsetLeft + maxOffsetLeft; i++) {
             indicesLeft.push_back(myflatChildren[i].tupleIndex);
@@ -41,7 +41,7 @@ class IMultiplicationStrategy {
         std::vector<int> indicesRightPos;
         indicesRightPos.reserve(maxOffsetRight);
 
-        std::vector<FlatChildEntry> flatChildren = other.getFlatChildren();
+        std::vector<FlatChildEntry>& flatChildren = other->getFlatChildren();
 
         for (int i = offsetRight; i < offsetRight + maxOffsetRight; i++) {
             indicesRight.push_back(flatChildren[i].tupleIndex);
@@ -79,8 +79,8 @@ class IMultiplicationStrategy {
         indicesLeftPos.clear();
         indicesRightPos.clear();
 
-        const std::vector<FlatNode>& myNodes = me.getNodes();
-        const std::vector<FlatNode>& otherNodes = other.getNodes();
+        const std::vector<FlatNode>& myNodes = me->getNodes();
+        const std::vector<FlatNode>& otherNodes = other->getNodes();
 
         for (const CommonOffset &offset : offsets) {
             int left = offset.indexLeft;
@@ -98,7 +98,7 @@ class IMultiplicationStrategy {
                 m_Multi++;
                 double result = visitLeft.value * visitRight.value;
                 currentTuple->push_back(offset.tupleKey);
-                destination.insert(&(*currentTuple)[0], tupleMaxSize + 1,
+                destination->insert(&(*currentTuple)[0], tupleMaxSize + 1,
                                     result);
                 currentTuple->pop_back();
                 continue;
