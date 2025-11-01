@@ -1,9 +1,10 @@
 #ifndef IMULTIPLICATION_STRATEGY_H
 #define IMULTIPLICATION_STRATEGY_H
+#include "../../FlatIndex.h"
 #include "../../ISparseMatrix.h"
 #include <assert.h>
+#include <memory>
 #include <vector>
-
 
 class IMultiplicationStrategy {
     friend class SparseMatrix;
@@ -20,56 +21,24 @@ class IMultiplicationStrategy {
                     ISparseMatrix *me, ISparseMatrix *other,
                     ISparseMatrix *destination, std::vector<int> *currentTuple,
                     int tupleMaxSize) {
-        int offsetLeft = visitLeft.childOffset;
-        int maxOffsetLeft = visitLeft.numChildren;
 
-        std::vector<int> indicesLeft;
-        indicesLeft.reserve(maxOffsetLeft);
-
-        std::vector<int> indicesLeftPos;
-        indicesLeftPos.reserve(maxOffsetLeft);
-
-        std::vector<FlatChildEntry> &myflatChildren = me->getFlatChildren();
-
-        for (int i = offsetLeft; i < offsetLeft + maxOffsetLeft; i++) {
-            indicesLeft.push_back(myflatChildren[i].tupleIndex);
-            indicesLeftPos.push_back(i);
-        }
-
-        int offsetRight = visitRight.childOffset;
-        int maxOffsetRight = visitRight.numChildren;
-
-        std::vector<int> indicesRight;
-        indicesRight.reserve(maxOffsetRight);
-
-        std::vector<int> indicesRightPos;
-        indicesRightPos.reserve(maxOffsetRight);
-
-        std::vector<FlatChildEntry> &flatChildren = other->getFlatChildren();
-
-        for (int i = offsetRight; i < offsetRight + maxOffsetRight; i++) {
-            indicesRight.push_back(flatChildren[i].tupleIndex);
-            indicesRightPos.push_back(i);
-        }
-
-        int maxSize =
-            maxOffsetLeft < maxOffsetRight ? maxOffsetRight : maxOffsetLeft;
+        auto info = collectIndexInformation(visitLeft, visitRight, me, other);
 
         std::vector<CommonOffset> offsets;
-        offsets.reserve(maxSize);
+        offsets.reserve(info->maxSize);
 
         // lets find common root nodes
         int j = 0; // indicesRight[0];
-        for (int i = 0; i < maxOffsetLeft; i++) {
-            int indexLeft = indicesLeft[i];
-            if (j < maxOffsetRight && indexLeft < indicesRight[j]) {
+        for (int i = 0; i < info->maxOffsetLeft; i++) {
+            int indexLeft = info->leftIndices[i];
+            if (j < info->maxOffsetRight && indexLeft < info->rightIndices[j]) {
                 continue;
             }
-            for (; j < maxOffsetRight; j++) {
-                int indexRight = indicesRight[j];
+            for (; j < info->maxOffsetRight; j++) {
+                int indexRight = info->rightIndices[j];
                 if (indexLeft == indexRight) {
-                    offsets.push_back(
-                        {indicesLeftPos[i], indicesRightPos[j], indexRight});
+                    offsets.push_back({info->leftIndexPos[i],
+                                       info->rightIndexPos[j], indexRight});
                     j++;
                     break;
                 }
@@ -78,10 +47,15 @@ class IMultiplicationStrategy {
                 }
             }
         }
-        indicesLeft.clear();
-        indicesRight.clear();
-        indicesLeftPos.clear();
-        indicesRightPos.clear();
+        info->leftIndices.clear();
+        info->rightIndices.clear();
+        info->leftIndexPos.clear();
+        info->rightIndexPos.clear();
+
+        const std::vector<FlatChildEntry> &myflatChildren =
+            me->getFlatChildren();
+        const std::vector<FlatChildEntry> &flatChildren =
+            other->getFlatChildren();
 
         const std::vector<FlatNode> &myNodes = me->getNodes();
         const std::vector<FlatNode> &otherNodes = other->getNodes();
@@ -115,7 +89,55 @@ class IMultiplicationStrategy {
         }
 
         offsets.clear();
+        info.release();
         return;
+    }
+
+    std::unique_ptr<FlatIndex>
+    collectIndexInformation(const FlatNode &visitLeft,
+                            const FlatNode &visitRight, ISparseMatrix *me,
+                            ISparseMatrix *other) {
+        auto ptr = std::make_unique<FlatIndex>();
+
+        int offsetLeft = visitLeft.childOffset;
+        int maxOffsetLeft = visitLeft.numChildren;
+
+        ptr->leftIndices.reserve(maxOffsetLeft);
+        ptr->leftIndexPos.reserve(maxOffsetLeft);
+
+        const std::vector<FlatChildEntry> &myflatChildren =
+            me->getFlatChildren();
+
+        int max = offsetLeft + maxOffsetLeft;
+
+        for (int i = offsetLeft; i < max; i++) {
+            ptr->leftIndices.push_back(myflatChildren[i].tupleIndex);
+            ptr->leftIndexPos.push_back(i);
+        }
+
+        int offsetRight = visitRight.childOffset;
+        int maxOffsetRight = visitRight.numChildren;
+
+        ptr->rightIndices.reserve(maxOffsetRight);
+        ptr->rightIndexPos.reserve(maxOffsetRight);
+
+        const std::vector<FlatChildEntry> &flatChildren =
+            other->getFlatChildren();
+        max = offsetRight + maxOffsetRight;
+
+        for (int i = offsetRight; i < max; i++) {
+            ptr->rightIndices.push_back(flatChildren[i].tupleIndex);
+            ptr->rightIndexPos.push_back(i);
+        }
+
+        int maxSize =
+            maxOffsetLeft < maxOffsetRight ? maxOffsetRight : maxOffsetLeft;
+
+        ptr->maxSize = maxSize;
+        ptr->maxOffsetLeft = maxOffsetLeft;
+        ptr->maxOffsetRight = maxOffsetRight;
+
+        return (ptr);
     }
 };
 #endif

@@ -24,17 +24,17 @@ void testParallelThreadedMultiplication();
 void testParallelThreadedMultiplicationOneDim();
 
 int main() {
-    /*    testInsert();
+        testInsert();
         testDelete();
         testIterator();
         testIteratorPerf();
         testMultiplication();
         testMultiplicationPerfMulti();
-        testMultiplicationNew();*/
-    //  testMultiplicationNewPerf();
-    /*   testParallelThreadedMultiplication();
+        testMultiplicationNew();
+      testMultiplicationNewPerf();
+     testParallelThreadedMultiplication();
        testMultiplicationPerf();
-   */
+   
     testParallelThreadedMultiplicationOneDim();
     std::cout << "End of Tests!" << std::endl;
 }
@@ -210,6 +210,7 @@ void testMultiplicationNew() {
         SparseMatrix C = A * B;
         A.setMultiplicationStrategy(TUPLE_ITERATION);
         SparseMatrix D = A * B;
+       // std::cout << A.size() << " " << B.size() << std::endl;
         assert(C == D);
     }
     t2 = high_resolution_clock::now();
@@ -576,6 +577,7 @@ void testMultiplication() {
                   << tuple.tuple[2] << "} := " << tuple.value << std::endl;
         assertTupleEquality(tuple, groundTruth[i++]);
     }
+    std::cout << i << std::endl;
     assert(i == (int)groundTruth.size());
 }
 
