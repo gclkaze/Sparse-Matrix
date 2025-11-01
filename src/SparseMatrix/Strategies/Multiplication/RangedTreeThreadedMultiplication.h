@@ -7,7 +7,6 @@
 #include <thread>
 #include <vector>
 
-
 class RangedTreeThreadedMultiplication : public IMultiplicationStrategy {
   private:
     size_t m_RangeElementsPerThread = 20;
@@ -38,59 +37,24 @@ class RangedTreeThreadedMultiplication : public IMultiplicationStrategy {
                                          ISparseMatrix *other,
                                          ISparseMatrix *result) {
 
-        int offsetLeft = visitLeft.childOffset;
-        int maxOffsetLeft = visitLeft.numChildren;
-
-        std::vector<int> indicesLeft;
-        indicesLeft.reserve(maxOffsetLeft);
-
-        std::vector<int> indicesLeftPos;
-        indicesLeftPos.reserve(maxOffsetLeft);
-
-        std::vector<FlatChildEntry> &myflatChildren = me->getFlatChildren();
-
-        for (int i = offsetLeft; i < offsetLeft + maxOffsetLeft; i++) {
-            indicesLeft.push_back(myflatChildren[i].tupleIndex);
-            indicesLeftPos.push_back(i);
-        }
-
-        int offsetRight = visitRight.childOffset;
-        int maxOffsetRight = visitRight.numChildren;
-
-        std::vector<int> indicesRight;
-        indicesRight.reserve(maxOffsetRight);
-
-        std::vector<int> indicesRightPos;
-        indicesRightPos.reserve(maxOffsetRight);
-
-        std::vector<FlatChildEntry> &otherflatChildren =
-            other->getFlatChildren();
-
-        for (int i = offsetRight; i < offsetRight + maxOffsetRight; i++) {
-            indicesRight.push_back(otherflatChildren[i].tupleIndex);
-            indicesRightPos.push_back(i);
-        }
-
-        int maxSize =
-            maxOffsetLeft < maxOffsetRight ? maxOffsetRight : maxOffsetLeft;
-
+        auto info = collectIndexInformation(visitLeft, visitRight, me, other);
         std::vector<std::thread> workers;
 
         // each thread, it handles m_RangeElementsPerThread indices
         std::vector<CommonOffset> offsets;
         offsets.reserve(m_RangeElementsPerThread);
 
-        int j = indicesRightPos[0];
-        for (int i = 0; i < maxOffsetLeft; i++) {
-            int indexLeft = indicesLeft[i];
-            if (j < maxOffsetRight && indexLeft < indicesRight[j]) {
+        int j = info->leftIndexPos[0];
+        for (int i = 0; i < info->maxOffsetLeft; i++) {
+            int indexLeft = info->leftIndices[i];
+            if (j < info->maxOffsetRight && indexLeft < info->rightIndices[j]) {
                 continue;
             }
-            for (; j < maxOffsetRight; j++) {
-                int indexRight = indicesRight[j];
+            for (; j < info->maxOffsetRight; j++) {
+                int indexRight = info->rightIndices[j];
                 if (indexLeft == indexRight) {
-                    offsets.push_back(
-                        {indicesLeftPos[i], indicesRightPos[j], indexRight});
+                    offsets.push_back({info->leftIndexPos[i],
+                                       info->rightIndexPos[j], indexRight});
 
                     if (offsets.size() == m_RangeElementsPerThread) {
                         workers.emplace_back(RangedTreeThreadedMultiplication::
@@ -119,6 +83,7 @@ class RangedTreeThreadedMultiplication : public IMultiplicationStrategy {
                 t.join();
             }
         }
+        info.release();
         return;
     }
 

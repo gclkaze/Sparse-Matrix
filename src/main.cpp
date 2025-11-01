@@ -104,7 +104,7 @@ void testParallelThreadedMultiplication() {
     int J = 100;
     int K = 100;
     int stride = 2;
-    int executionTimes = 200;
+    int executionTimes = 100;
     int aSize = 0;
     int bSize = 0;
     std::cout << "Matrix construction started!" << std::endl;

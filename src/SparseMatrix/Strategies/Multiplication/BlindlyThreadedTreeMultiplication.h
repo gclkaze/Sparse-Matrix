@@ -27,57 +27,23 @@ class BlindlyThreadedTreeMultiplication : public IMultiplicationStrategy {
                                    ISparseMatrix *me, ISparseMatrix *other,
                                    ISparseMatrix *result) {
 
-        int offsetLeft = visitLeft.childOffset;
-        int maxOffsetLeft = visitLeft.numChildren;
-
-        std::vector<int> indicesLeft;
-        indicesLeft.reserve(maxOffsetLeft);
-
-        std::vector<int> indicesLeftPos;
-        indicesLeftPos.reserve(maxOffsetLeft);
-
-        std::vector<FlatChildEntry> &myflatChildren = me->getFlatChildren();
-
-        for (int i = offsetLeft; i < offsetLeft + maxOffsetLeft; i++) {
-            indicesLeft.push_back(myflatChildren[i].tupleIndex);
-            indicesLeftPos.push_back(i);
-        }
-
-        int offsetRight = visitRight.childOffset;
-        int maxOffsetRight = visitRight.numChildren;
-
-        std::vector<int> indicesRight;
-        indicesRight.reserve(maxOffsetRight);
-
-        std::vector<int> indicesRightPos;
-        indicesRightPos.reserve(maxOffsetRight);
-        std::vector<FlatChildEntry> &otherflatChildren =
-            other->getFlatChildren();
-
-        for (int i = offsetRight; i < offsetRight + maxOffsetRight; i++) {
-            indicesRight.push_back(otherflatChildren[i].tupleIndex);
-            indicesRightPos.push_back(i);
-        }
-
-        int maxSize =
-            maxOffsetLeft < maxOffsetRight ? maxOffsetRight : maxOffsetLeft;
-
+        auto info = collectIndexInformation(visitLeft, visitRight, me, other);
         std::vector<std::thread> workers;
 
         // lets find common root nodes
-        int j = indicesRight[0];
-        for (int i = 0; i < maxOffsetLeft; i++) {
-            int indexLeft = indicesLeft[i];
-            if (j < maxOffsetRight && indexLeft < indicesRight[j]) {
+        int j = info->rightIndices[0];
+        for (int i = 0; i < info->maxOffsetLeft; i++) {
+            int indexLeft = info->leftIndices[i];
+            if (j < info->maxOffsetRight && indexLeft < info->rightIndices[j]) {
                 continue;
             }
-            for (; j < maxOffsetRight; j++) {
-                int indexRight = indicesRight[j];
+            for (; j < info->maxOffsetRight; j++) {
+                int indexRight = info->rightIndices[j];
                 if (indexLeft == indexRight) {
                     workers.emplace_back(BlindlyThreadedTreeMultiplication::
                                              parallelMultiplication,
-                                         this, indicesLeftPos[i],
-                                         indicesRightPos[j], indexRight, me,
+                                         this, info->leftIndexPos[i],
+                                         info->rightIndexPos[j], indexRight, me,
                                          other, result);
 
                     j++;
@@ -93,11 +59,8 @@ class BlindlyThreadedTreeMultiplication : public IMultiplicationStrategy {
                 t.join();
             }
         }
-        indicesLeft.clear();
-        indicesRight.clear();
 
-        indicesRight.clear();
-        indicesLeftPos.clear();
+        info.release();
         return;
     }
 
