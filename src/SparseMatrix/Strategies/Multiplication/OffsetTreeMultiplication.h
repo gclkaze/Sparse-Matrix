@@ -1,18 +1,18 @@
 #ifndef OFFSET_TREE_MULTIPLICATION_H
 #define OFFSET_TREE_MULTIPLICATION_H
+#include <memory>
+
 #include "../../CommonOffset.h"
 #include "IMultiplicationStrategy.h"
-#include <memory>
+
 class OFfsetTreeMultiplication : public IMultiplicationStrategy {
-  private:
+   private:
     size_t m_RangeElementsPerThread = 20;
 
-  public:
+   public:
     ~OFfsetTreeMultiplication() {}
 
-    ISparseMatrix *multiply(ISparseMatrix *A, ISparseMatrix *B,
-                            ISparseMatrix *C) {
-
+    ISparseMatrix* multiply(ISparseMatrix* A, ISparseMatrix* B, ISparseMatrix* C) {
         m_Multi = 0;
         if (A->size() == 0 || B->size() == 0) {
             return C;
@@ -30,15 +30,13 @@ class OFfsetTreeMultiplication : public IMultiplicationStrategy {
 
         std::vector<int> t;
 
-        const std::vector<FlatNode> &myNodes = A->getNodes();
-        const std::vector<FlatNode> &otherNodes = B->getNodes();
+        const std::vector<FlatNode>& myNodes = A->getNodes();
+        const std::vector<FlatNode>& otherNodes = B->getNodes();
 
-        std::vector<FlatChildEntry> &flatChildren = A->getFlatChildren();
-        std::vector<FlatChildEntry> &otherChildren = B->getFlatChildren();
+        std::vector<FlatChildEntry>& flatChildren = A->getFlatChildren();
+        std::vector<FlatChildEntry>& otherChildren = B->getFlatChildren();
 
-      
-        for (const CommonOffset &offset : common.get()->offsets) {
-
+        for (const CommonOffset& offset : common.get()->offsets) {
             int left = offset.indexLeft;
             int right = offset.indexRight;
 
@@ -68,10 +66,7 @@ class OFfsetTreeMultiplication : public IMultiplicationStrategy {
         return C;
     }
 
-    std::unique_ptr<CommonOffsets> findCommonIndices(
-                                                     ISparseMatrix *me,
-                                                     ISparseMatrix *other) {
-
+    std::unique_ptr<CommonOffsets> findCommonIndices(ISparseMatrix* me, ISparseMatrix* other) {
         FlatNode visitLeft = me->getNodes()[0];
         FlatNode visitRight = other->getNodes()[0];
         // lets find the root nodes for each
@@ -84,8 +79,7 @@ class OFfsetTreeMultiplication : public IMultiplicationStrategy {
             for (; j < info->maxOffsetRight; j++) {
                 int indexRight = info->rightIndices[j];
                 if (indexLeft == indexRight) {
-                    offsets.push_back({info->leftIndexPos[i],
-                                       info->rightIndexPos[j], indexRight});
+                    offsets.push_back({info->leftIndexPos[i], info->rightIndexPos[j], indexRight});
                     j++;
                     break;
                 }

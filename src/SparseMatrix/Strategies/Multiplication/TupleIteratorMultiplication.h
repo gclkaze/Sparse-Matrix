@@ -1,22 +1,20 @@
 #ifndef TUPLE_ITERATOR_MULTIPLICATION_H
 #define TUPLE_ITERATOR_MULTIPLICATION_H
 
-#include "../../CommonOffset.h"
-#include "../../FlatNode.h"
-#include "IMultiplicationStrategy.h"
 #include <thread>
 #include <vector>
 
+#include "../../CommonOffset.h"
+#include "../../FlatNode.h"
 #include "../../SparseMatrixIterator.h"
+#include "IMultiplicationStrategy.h"
+
 
 class TupleIteratorMultiplication : public IMultiplicationStrategy {
-
-  public:
+   public:
     ~TupleIteratorMultiplication() {}
 
-    ISparseMatrix *multiply(ISparseMatrix *A, ISparseMatrix *B,
-                            ISparseMatrix *C) {
-
+    ISparseMatrix* multiply(ISparseMatrix* A, ISparseMatrix* B, ISparseMatrix* C) {
         SparseMatrixIterator it = A->iterator();
         SparseMatrixIterator otherIt = B->iterator();
 

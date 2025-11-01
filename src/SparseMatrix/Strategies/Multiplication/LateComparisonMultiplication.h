@@ -3,15 +3,13 @@
 #include "IMultiplicationStrategy.h"
 
 class LateComparisonMultiplication : public IMultiplicationStrategy {
-  private:
+   private:
     size_t m_RangeElementsPerThread = 20;
 
-  public:
+   public:
     ~LateComparisonMultiplication() {}
 
-    ISparseMatrix *multiply(ISparseMatrix *A, ISparseMatrix *B,
-                            ISparseMatrix *C) {
-
+    ISparseMatrix* multiply(ISparseMatrix* A, ISparseMatrix* B, ISparseMatrix* C) {
         m_Multi = 0;
         SparseMatrixIterator it = A->iterator();
         SparseMatrixIterator otherIt = B->iterator();
@@ -23,7 +21,6 @@ class LateComparisonMultiplication : public IMultiplicationStrategy {
         bool otherEnd = otherIt.ended();
 
         while (true) {
-
             if (myEnd && otherEnd) {
                 break;
             } else if (!myEnd && otherEnd) {

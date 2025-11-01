@@ -12,15 +12,14 @@ struct CommonOffsets {
     std::vector<CommonOffset> offsets;
     int maxSize;
     int actualSize;
-   // int *commonRoots;
+    // int *commonRoots;
 
     void dump() {
         for (int i = 0; i < actualSize; i++) {
             CommonOffset offset = (offsets)[i];
 
-            std::cout << i << " : " << offset.indexLeft << ","
-                      << offset.indexRight << " = " << offset.tupleKey
-                      << std::endl;
+            std::cout << i << " : " << offset.indexLeft << "," << offset.indexRight << " = "
+                      << offset.tupleKey << std::endl;
         }
     }
 };

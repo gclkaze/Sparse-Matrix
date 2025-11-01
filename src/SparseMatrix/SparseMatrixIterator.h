@@ -1,48 +1,44 @@
 #ifndef SPARSE_MATRIX_ITERATOR_H
 #define SPARSE_MATRIX_ITERATOR_H
-#include "FlatNode.h"
-#include "SparseMatrixTuple.h"
-#include <vector>
 #include <assert.h>
 
+#include <vector>
+
+#include "FlatNode.h"
+#include "SparseMatrixTuple.h"
+
+
 class SparseMatrixIterator {
-  private:
-    std::vector<FlatNode> *m_Nodes = nullptr;
-    std::vector<FlatChildEntry> *m_Children = nullptr;
+   private:
+    std::vector<FlatNode>* m_Nodes = nullptr;
+    std::vector<FlatChildEntry>* m_Children = nullptr;
     int m_Size = 0;
     std::vector<int> m_State;
     std::vector<int> m_ChildrenLimits;
     SparseMatrixTuple m_Tuple;
     std::vector<int> m_Stack;
 
-  public:
-    SparseMatrixIterator(std::vector<FlatNode> *nodes,
-                         std::vector<FlatChildEntry> *children, int size)
+   public:
+    SparseMatrixIterator(std::vector<FlatNode>* nodes, std::vector<FlatChildEntry>* children,
+                         int size)
         : m_Nodes(nodes), m_Children(children), m_Size(size) {}
-    SparseMatrixIterator(std::vector<FlatNode> *nodes,
-                         std::vector<FlatChildEntry> *children)
+    SparseMatrixIterator(std::vector<FlatNode>* nodes, std::vector<FlatChildEntry>* children)
         : m_Nodes(nodes), m_Children(children) {}
-    SparseMatrixIterator begin() {
-        return SparseMatrixIterator(m_Nodes, m_Children, m_Size);
-    }
+    SparseMatrixIterator begin() { return SparseMatrixIterator(m_Nodes, m_Children, m_Size); }
 
     bool ended() const { return m_Size == 0; }
 
-    SparseMatrixIterator end() {
-        return SparseMatrixIterator(m_Nodes, m_Children);
-    }
+    SparseMatrixIterator end() { return SparseMatrixIterator(m_Nodes, m_Children); }
 
-    SparseMatrixTuple& getTuple(){
-        return m_Tuple;
-    }
+    SparseMatrixTuple& getTuple() { return m_Tuple; }
 
     SparseMatrixTuple operator*() {
         if (m_Size == 0) {
             return m_Tuple;
         }
         // start from root
-        FlatNode *currentNode = &(*m_Nodes)[0];
-        FlatChildEntry *visited = calibrateVisit(currentNode);
+        FlatNode* currentNode = &(*m_Nodes)[0];
+        FlatChildEntry* visited = calibrateVisit(currentNode);
 
         m_Tuple.tuple.clear();
         m_Tuple.value = 0;
@@ -54,8 +50,7 @@ class SparseMatrixIterator {
                 int childIndex = 0;
                 for (int i = 0; i < stackSize - 1; i++) {
                     childIndex = m_Stack[i];
-                    m_Tuple.tuple.push_back(
-                        (*m_Children)[childIndex].tupleIndex);
+                    m_Tuple.tuple.push_back((*m_Children)[childIndex].tupleIndex);
                 }
                 // add the branches value by adding the stored child offset to
                 // the current stacked child entry (that is the first child of
@@ -77,19 +72,17 @@ class SparseMatrixIterator {
         }
     }
 
-    const SparseMatrixTuple *operator->() { return &m_Tuple; }
+    const SparseMatrixTuple* operator->() { return &m_Tuple; }
 
-    friend bool operator==(const SparseMatrixIterator &a,
-                           const SparseMatrixIterator &b) {
+    friend bool operator==(const SparseMatrixIterator& a, const SparseMatrixIterator& b) {
         return a.m_Size == b.m_Size;
     }
 
-    friend bool operator!=(const SparseMatrixIterator &a,
-                           const SparseMatrixIterator &b) {
+    friend bool operator!=(const SparseMatrixIterator& a, const SparseMatrixIterator& b) {
         return a.m_Size != b.m_Size;
     }
 
-    SparseMatrixIterator &operator++() { return *this; }
+    SparseMatrixIterator& operator++() { return *this; }
 
     // Postfix increment
     SparseMatrixIterator operator++(int) {
@@ -98,8 +91,8 @@ class SparseMatrixIterator {
         return tmp;
     }
 
-  private:
-    FlatChildEntry *calibrateVisit(FlatNode *currentNode) {
+   private:
+    FlatChildEntry* calibrateVisit(FlatNode* currentNode) {
         if (!m_Stack.empty()) {
             int lastElem = m_State.size() - 1;
             assert(m_State.size() == m_Stack.size() &&

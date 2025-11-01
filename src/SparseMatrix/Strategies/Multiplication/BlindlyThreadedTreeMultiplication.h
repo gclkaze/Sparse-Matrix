@@ -1,15 +1,15 @@
 #ifndef BLINDLY_THREADED_TREE_MULTIPLICATION_H
 #define BLINDLY_THREADED_TREE_MULTIPLICATION_H
+#include <thread>
+
 #include "../../CommonOffset.h"
 #include "IMultiplicationStrategy.h"
-#include <thread>
-class BlindlyThreadedTreeMultiplication : public IMultiplicationStrategy {
 
-  public:
+class BlindlyThreadedTreeMultiplication : public IMultiplicationStrategy {
+   public:
     ~BlindlyThreadedTreeMultiplication() {}
 
-    ISparseMatrix *multiply(ISparseMatrix *A, ISparseMatrix *B,
-                            ISparseMatrix *C) {
+    ISparseMatrix* multiply(ISparseMatrix* A, ISparseMatrix* B, ISparseMatrix* C) {
         m_Multi = 0;
         if (A->size() == 0 || B->size() == 0) {
             return C;
@@ -19,11 +19,8 @@ class BlindlyThreadedTreeMultiplication : public IMultiplicationStrategy {
         return C;
     }
 
-  private:
-    void findThreadedCommonIndices(
-                                   ISparseMatrix *me, ISparseMatrix *other,
-                                   ISparseMatrix *result) {
-
+   private:
+    void findThreadedCommonIndices(ISparseMatrix* me, ISparseMatrix* other, ISparseMatrix* result) {
         FlatNode visitLeft = me->getNodes()[0];
         FlatNode visitRight = other->getNodes()[0];
         std::vector<std::thread> workers;
@@ -39,11 +36,9 @@ class BlindlyThreadedTreeMultiplication : public IMultiplicationStrategy {
             for (; j < info->maxOffsetRight; j++) {
                 int indexRight = info->rightIndices[j];
                 if (indexLeft == indexRight) {
-                    workers.emplace_back(BlindlyThreadedTreeMultiplication::
-                                             parallelMultiplication,
-                                         this, info->leftIndexPos[i],
-                                         info->rightIndexPos[j], indexRight, me,
-                                         other, result);
+                    workers.emplace_back(BlindlyThreadedTreeMultiplication::parallelMultiplication,
+                                         this, info->leftIndexPos[i], info->rightIndexPos[j],
+                                         indexRight, me, other, result);
 
                     j++;
                     break;
@@ -53,7 +48,7 @@ class BlindlyThreadedTreeMultiplication : public IMultiplicationStrategy {
                 }
             }
         }
-        for (auto &t : workers) {
+        for (auto& t : workers) {
             if (t.joinable()) {
                 t.join();
             }
@@ -63,16 +58,15 @@ class BlindlyThreadedTreeMultiplication : public IMultiplicationStrategy {
         return;
     }
 
-    void parallelMultiplication(int indexLeft, int indexRight, int key,
-                                ISparseMatrix *me, ISparseMatrix *other,
-                                ISparseMatrix *destination) {
+    void parallelMultiplication(int indexLeft, int indexRight, int key, ISparseMatrix* me,
+                                ISparseMatrix* other, ISparseMatrix* destination) {
         std::vector<int> t;
 
-        const std::vector<FlatNode> &myNodes = me->getNodes();
-        const std::vector<FlatNode> &otherNodes = other->getNodes();
+        const std::vector<FlatNode>& myNodes = me->getNodes();
+        const std::vector<FlatNode>& otherNodes = other->getNodes();
 
-        std::vector<FlatChildEntry> &flatChildren = me->getFlatChildren();
-        std::vector<FlatChildEntry> &otherChildren = other->getFlatChildren();
+        std::vector<FlatChildEntry>& flatChildren = me->getFlatChildren();
+        std::vector<FlatChildEntry>& otherChildren = other->getFlatChildren();
 
         int left = indexLeft;
         int right = indexRight;

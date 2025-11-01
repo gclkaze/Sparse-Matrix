@@ -4,12 +4,11 @@
 #include <string>
 #include <vector>
 
-
 struct SparseMatrixTuple {
     std::vector<int> tuple;
     double value;
 
-    bool operator<(const SparseMatrixTuple &other) const {
+    bool operator<(const SparseMatrixTuple& other) const {
         int size = (int)tuple.size();
         for (int i = 0; i < size; i++) {
             if (tuple[i] < other.tuple[i]) {
@@ -21,7 +20,7 @@ struct SparseMatrixTuple {
         return false;
     }
 
-    bool operator!=(const SparseMatrixTuple &other) const {
+    bool operator!=(const SparseMatrixTuple& other) const {
         int size = (int)tuple.size();
         for (int i = 0; i < size; i++) {
             if (tuple[i] == other.tuple[i]) {
@@ -31,7 +30,7 @@ struct SparseMatrixTuple {
         return true;
     }
 
-    bool operator==(const SparseMatrixTuple &other) const {
+    bool operator==(const SparseMatrixTuple& other) const {
         int size = (int)tuple.size();
         for (int i = 0; i < size; i++) {
             if (tuple[i] != other.tuple[i]) {

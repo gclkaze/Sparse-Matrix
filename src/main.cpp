@@ -1,7 +1,10 @@
-#include "SparseMatrix/SparseMatrix.h"
 #include <assert.h>
+
 #include <chrono>
 #include <iostream>
+
+#include "SparseMatrix/SparseMatrix.h"
+
 using namespace std;
 
 using std::chrono::duration;
@@ -13,8 +16,7 @@ void testInsert();
 void testDelete();
 void testIterator();
 void testIteratorPerf();
-void assertTupleEquality(const SparseMatrixTuple &t1,
-                         const SparseMatrixTuple &t2);
+void assertTupleEquality(const SparseMatrixTuple& t1, const SparseMatrixTuple& t2);
 void testMultiplication();
 void testMultiplicationPerf();
 void testMultiplicationPerfMulti();
@@ -24,17 +26,17 @@ void testParallelThreadedMultiplication();
 void testParallelThreadedMultiplicationOneDim();
 
 int main() {
-        testInsert();
-        testDelete();
-        testIterator();
-        testIteratorPerf();
-        testMultiplication();
-        testMultiplicationPerfMulti();
-        testMultiplicationNew();
-      testMultiplicationNewPerf();
-     testParallelThreadedMultiplication();
-       testMultiplicationPerf();
-   
+    testInsert();
+    testDelete();
+    testIterator();
+    testIteratorPerf();
+    testMultiplication();
+    testMultiplicationPerfMulti();
+    testMultiplicationNew();
+    testMultiplicationNewPerf();
+    testParallelThreadedMultiplication();
+    testMultiplicationPerf();
+
     testParallelThreadedMultiplicationOneDim();
     std::cout << "End of Tests!" << std::endl;
 }
@@ -77,7 +79,7 @@ void testParallelThreadedMultiplicationOneDim() {
     t1 = high_resolution_clock::now();
     for (int i = 0; i < executionTimes; i++) {
         SparseMatrix C = A * B;
-       A.setMultiplicationStrategy(TUPLE_ITERATION);
+        A.setMultiplicationStrategy(TUPLE_ITERATION);
         SparseMatrix D = A * B;
         assert(C == D);
         A.setMultiplicationStrategy(OFFSET_TREE);
@@ -86,7 +88,7 @@ void testParallelThreadedMultiplicationOneDim() {
         A.setMultiplicationStrategy(BLINDLY_THREADED_TREE);
         SparseMatrix Z = A * B;
         assert(Z == D);
-        assert(D.size() == bSize && Z.size() == bSize);    
+        assert(D.size() == bSize && Z.size() == bSize);
     }
     t2 = high_resolution_clock::now();
     ms_int = duration_cast<milliseconds>(t2 - t1);
@@ -210,7 +212,7 @@ void testMultiplicationNew() {
         SparseMatrix C = A * B;
         A.setMultiplicationStrategy(TUPLE_ITERATION);
         SparseMatrix D = A * B;
-       // std::cout << A.size() << " " << B.size() << std::endl;
+        // std::cout << A.size() << " " << B.size() << std::endl;
         assert(C == D);
     }
     t2 = high_resolution_clock::now();
@@ -380,7 +382,7 @@ void testMultiplicationPerfMulti() {
     B.setMultiplicationStrategy(LATE_COMPARISON);
 
     for (int i = 0; i < executionTimes; i++) {
-        SparseMatrix C = B * A; //.oldMultiplication(A);
+        SparseMatrix C = B * A;  //.oldMultiplication(A);
     }
     t2 = high_resolution_clock::now();
     ms_int = duration_cast<milliseconds>(t2 - t1);
@@ -450,7 +452,7 @@ void testMultiplicationPerf() {
 
         SparseMatrixIterator iterator = C.iterator();
         int i = 0;
-        for (const SparseMatrixTuple &tuple : iterator) {
+        for (const SparseMatrixTuple& tuple : iterator) {
             assertTupleEquality(tuple, groundTruth[i++]);
         }
         assert(i == (int)groundTruth.size());
@@ -463,7 +465,7 @@ void testMultiplicationPerf() {
         t1 = high_resolution_clock::now();
 
         A.setMultiplicationStrategy(LATE_COMPARISON);
-        SparseMatrix OC = A * B; // A.oldMultiplication(B);
+        SparseMatrix OC = A * B;  // A.oldMultiplication(B);
 
         t2 = high_resolution_clock::now();
         ms_int = duration_cast<milliseconds>(t2 - t1);
@@ -472,7 +474,7 @@ void testMultiplicationPerf() {
 
         SparseMatrixIterator iteratorD = OC.iterator();
         int i = 0;
-        for (const SparseMatrixTuple &tuple : iteratorD) {
+        for (const SparseMatrixTuple& tuple : iteratorD) {
             assertTupleEquality(tuple, groundTruth[i++]);
         }
         assert(i == (int)groundTruth.size());
@@ -495,7 +497,7 @@ void testMultiplicationPerf() {
 
         SparseMatrixIterator iteratorD = OC.iterator();
         int i = 0;
-        for (const SparseMatrixTuple &tuple : iteratorD) {
+        for (const SparseMatrixTuple& tuple : iteratorD) {
             assertTupleEquality(tuple, groundTruth[i++]);
         }
         assert(i == (int)groundTruth.size());
@@ -517,7 +519,7 @@ void testMultiplicationPerf() {
 
         SparseMatrixIterator iteratorD = OC.iterator();
         int i = 0;
-        for (const SparseMatrixTuple &tuple : iteratorD) {
+        for (const SparseMatrixTuple& tuple : iteratorD) {
             assertTupleEquality(tuple, groundTruth[i++]);
         }
         assert(i == (int)groundTruth.size());
@@ -540,7 +542,7 @@ void testMultiplicationPerf() {
 
         SparseMatrixIterator iteratorD = OC.iterator();
         int i = 0;
-        for (const SparseMatrixTuple &tuple : iteratorD) {
+        for (const SparseMatrixTuple& tuple : iteratorD) {
             assertTupleEquality(tuple, groundTruth[i++]);
         }
         std::cout << i << std::endl;
@@ -552,7 +554,6 @@ void testMultiplicationPerf() {
 }
 
 void testMultiplication() {
-
     SparseMatrix A;
     A.insert({1, 1, 1}, 2);
     A.insert({1, 1, 2}, 3);
@@ -572,9 +573,9 @@ void testMultiplication() {
     groundTruth.push_back({{1, 1, 1}, 4});
     groundTruth.push_back({{50, 2, 1}, 25});
     int i = 0;
-    for (const SparseMatrixTuple &tuple : iterator) {
-        std::cout << "{" << tuple.tuple[0] << "," << tuple.tuple[1] << ","
-                  << tuple.tuple[2] << "} := " << tuple.value << std::endl;
+    for (const SparseMatrixTuple& tuple : iterator) {
+        std::cout << "{" << tuple.tuple[0] << "," << tuple.tuple[1] << "," << tuple.tuple[2]
+                  << "} := " << tuple.value << std::endl;
         assertTupleEquality(tuple, groundTruth[i++]);
     }
     std::cout << i << std::endl;
@@ -609,16 +610,15 @@ void testIterator() {
 
     SparseMatrixIterator iterator = A.iterator();
     int i = 0;
-    for (const SparseMatrixTuple &tuple : iterator) {
-        std::cout << "{" << tuple.tuple[0] << "," << tuple.tuple[1] << ","
-                  << tuple.tuple[2] << "} := " << tuple.value << std::endl;
+    for (const SparseMatrixTuple& tuple : iterator) {
+        std::cout << "{" << tuple.tuple[0] << "," << tuple.tuple[1] << "," << tuple.tuple[2]
+                  << "} := " << tuple.value << std::endl;
         assertTupleEquality(tuple, groundTruth[i++]);
     }
     assert(i == (int)groundTruth.size());
 }
 
-void assertTupleEquality(const SparseMatrixTuple &t1,
-                         const SparseMatrixTuple &t2) {
+void assertTupleEquality(const SparseMatrixTuple& t1, const SparseMatrixTuple& t2) {
     int sz = (int)t2.tuple.size();
 
     assert((int)t1.tuple.size() == sz);
@@ -654,7 +654,7 @@ void testIteratorPerf() {
     t1 = high_resolution_clock::now();
     SparseMatrixIterator iterator = A.iterator();
     int i = 0;
-    for (const SparseMatrixTuple &tuple : iterator) {
+    for (const SparseMatrixTuple& tuple : iterator) {
         // std::cout << "{" << tuple.tuple[0] << "," << tuple.tuple[1] << "," <<
         // tuple.tuple[2] << "} := " << tuple.value << std::endl;
     }
@@ -715,15 +715,8 @@ void testDelete() {
     assert(B.erase({0, 5, 6}));
     assert(B.size() == 3);
 
-    B.assertFlatChildrenValues({{1, 1},
-                                {4, 4},
-                                {5, 7},
-                                {5, 2},
-                                {6, 3},
-                                {5, 5},
-                                {6, 6},
-                                {5, 8},
-                                {6, 9}});
+    B.assertFlatChildrenValues(
+        {{1, 1}, {4, 4}, {5, 7}, {5, 2}, {6, 3}, {5, 5}, {6, 6}, {5, 8}, {6, 9}});
     B.assertFlatNodeValues({{0, 3, 0, 0},
                             {3, 1, 0, 0},
                             {4, 1, 0, 0},
@@ -738,8 +731,7 @@ void testDelete() {
     assert(B.erase({4, 5, 6}));
     assert(B.size() == 2);
 
-    B.assertFlatChildrenValues(
-        {{1, 1}, {5, 4}, {5, 2}, {6, 3}, {5, 5}, {6, 6}});
+    B.assertFlatChildrenValues({{1, 1}, {5, 4}, {5, 2}, {6, 3}, {5, 5}, {6, 6}});
     B.assertFlatNodeValues({{0, 2, 0, 0},
                             {2, 1, 0, 0},
                             {3, 1, 0, 0},
@@ -752,8 +744,7 @@ void testDelete() {
     assert(B.size() == 1);
 
     B.assertFlatChildrenValues({{1, 1}, {5, 2}, {6, 3}});
-    B.assertFlatNodeValues(
-        {{0, 1, 0, 0}, {1, 1, 0, 0}, {2, 1, 0, 0}, {-1, 0, 1, 11}});
+    B.assertFlatNodeValues({{0, 1, 0, 0}, {1, 1, 0, 0}, {2, 1, 0, 0}, {-1, 0, 1, 11}});
 
     assert(B.erase({1, 5, 6}));
     assert(B.size() == 0);
@@ -773,8 +764,7 @@ void testInsert() {
     assert(A.size() == 1);
 
     A.assertFlatChildrenValues({{1, 1}, {5, 2}, {6, 3}});
-    A.assertFlatNodeValues(
-        {{0, 1, 0, 0}, {1, 1, 0, 0}, {2, 1, 0, 0}, {-1, 0, 1, 11}});
+    A.assertFlatNodeValues({{0, 1, 0, 0}, {1, 1, 0, 0}, {2, 1, 0, 0}, {-1, 0, 1, 11}});
 
     // first index different
     A.insert({6, 5, 6}, 13.0);
@@ -783,8 +773,7 @@ void testInsert() {
     assert(A.getValue({6, 5, 6}) == 13.0);
     assert(A.size() == 2);
 
-    A.assertFlatChildrenValues(
-        {{1, 1}, {6, 4}, {5, 2}, {6, 3}, {5, 5}, {6, 6}});
+    A.assertFlatChildrenValues({{1, 1}, {6, 4}, {5, 2}, {6, 3}, {5, 5}, {6, 6}});
     A.assertFlatNodeValues({{0, 2, 0, 0},
                             {2, 1, 0, 0},
                             {3, 1, 0, 0},
@@ -801,15 +790,8 @@ void testInsert() {
     assert(A.getValue({4, 5, 6}) == 133.0);
     assert(A.size() == 3);
 
-    A.assertFlatChildrenValues({{1, 1},
-                                {4, 7},
-                                {6, 4},
-                                {5, 2},
-                                {6, 3},
-                                {5, 5},
-                                {6, 6},
-                                {5, 8},
-                                {6, 9}});
+    A.assertFlatChildrenValues(
+        {{1, 1}, {4, 7}, {6, 4}, {5, 2}, {6, 3}, {5, 5}, {6, 6}, {5, 8}, {6, 9}});
     A.assertFlatNodeValues({{0, 3, 0, 0},
                             {3, 1, 0, 0},
                             {4, 1, 0, 0},
@@ -910,17 +892,8 @@ void testInsert() {
     assert(B.getValue({1, 4, 7}) == 2.0);
     assert(B.size() == 4);
 
-    B.assertFlatChildrenValues({{1, 1},
-                                {4, 7},
-                                {6, 4},
-                                {4, 10},
-                                {5, 2},
-                                {6, 3},
-                                {5, 5},
-                                {6, 6},
-                                {5, 8},
-                                {6, 9},
-                                {7, 11}});
+    B.assertFlatChildrenValues(
+        {{1, 1}, {4, 7}, {6, 4}, {4, 10}, {5, 2}, {6, 3}, {5, 5}, {6, 6}, {5, 8}, {6, 9}, {7, 11}});
     B.assertFlatNodeValues({{0, 3, 0, 0},
                             {3, 2, 0, 0},
                             {5, 1, 0, 0},
@@ -1026,16 +999,8 @@ void testInsert() {
     assert(C.getValue({1, 5, 1}) == 2.0);
     assert(C.size() == 4);
 
-    C.assertFlatChildrenValues({{1, 1},
-                                {4, 7},
-                                {6, 4},
-                                {5, 2},
-                                {1, 10},
-                                {6, 3},
-                                {5, 5},
-                                {6, 6},
-                                {5, 8},
-                                {6, 9}});
+    C.assertFlatChildrenValues(
+        {{1, 1}, {4, 7}, {6, 4}, {5, 2}, {1, 10}, {6, 3}, {5, 5}, {6, 6}, {5, 8}, {6, 9}});
     C.assertFlatNodeValues({{0, 3, 0, 0},
                             {3, 1, 0, 0},
                             {4, 2, 0, 0},
