@@ -16,7 +16,6 @@
 #include "SparseMatrixIterator.h"
 #include "Strategies/Multiplication/MultiplicationStrategyFactory.h"
 
-
 class SparseMatrix : public ISparseMatrix {
     friend class SparseMatrixIterator;
     friend class IMultiplicationStrategy;
@@ -193,7 +192,11 @@ class SparseMatrix : public ISparseMatrix {
     SparseMatrix operator*(SparseMatrix& other) {
         auto ptr = MultiplicationStrategyFactory::createMultiplication(m_MultiplicationType);
         SparseMatrix result;
-        ptr.get()->multiply(this, &other, &result);
+        if (m_Size <= other.m_Size) {
+            ptr.get()->multiply(this, &other, &result);
+        }else {
+            ptr.get()->multiply(&other, this, &result);
+        }
         return result;
     }
 

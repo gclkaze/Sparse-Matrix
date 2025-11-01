@@ -4,7 +4,7 @@
 #include <iostream>
 
 #include "SparseMatrix/SparseMatrix.h"
-
+#include "SparseMatrix/Strategies/Multiplication/IndexIntersectionFinder.h"
 using namespace std;
 
 using std::chrono::duration;
@@ -24,21 +24,116 @@ void testMultiplicationNew();
 void testMultiplicationNewPerf();
 void testParallelThreadedMultiplication();
 void testParallelThreadedMultiplicationOneDim();
+void testNoCommonIndicesMultiplication();
 
+void testFoundIndices();
 int main() {
-    testInsert();
-    testDelete();
-    testIterator();
-    testIteratorPerf();
-    testMultiplication();
-    testMultiplicationPerfMulti();
-    testMultiplicationNew();
-    testMultiplicationNewPerf();
-    testParallelThreadedMultiplication();
-    testMultiplicationPerf();
+    /*        testInsert();
+            testDelete();
+            testIterator();
+            testIteratorPerf();
+            testMultiplication();
+            testMultiplicationPerfMulti();
+            testMultiplicationNew();
+            testMultiplicationNewPerf();
+            testParallelThreadedMultiplication();
+            testMultiplicationPerf();
 
-    testParallelThreadedMultiplicationOneDim();
+            testParallelThreadedMultiplicationOneDim();
+            testNoCommonIndicesMultiplication();*/
+    testFoundIndices();
     std::cout << "End of Tests!" << std::endl;
+}
+
+void testFoundIndices() {
+    FlatIndex info;
+    info.leftIndexPos = {0,1,2,3,4,5,6};
+    info.leftIndices = {1,2,3,7,8,10,15};
+
+    info.rightIndexPos = {0,1,2,3,4,5,6,7,8,9};
+    info.rightIndices = {0,8,15,16,17,18,19,20,21,22};
+
+    info.maxSize = 7;
+    info.maxOffsetLeft = info.leftIndexPos.size();
+    info.maxOffsetRight = info.rightIndexPos.size();
+
+   IndexIntersectionFinder finder;
+   std::vector<CommonOffset> offsets = finder.find(info);
+   assert(offsets[0].tupleKey == 8);
+   assert(offsets[1].tupleKey == 15);
+}
+
+void testNoCommonIndicesMultiplication() {
+    auto t1 = high_resolution_clock::now();
+    SparseMatrix A;
+    int I = 100;
+    int J = 100;
+    int K = 100;
+    int stride = 1;
+    int executionTimes = 100;
+    int aSize = 0;
+    int bSize = 0;
+    std::cout << "Matrix construction started!" << std::endl;
+
+    // dense
+    for (int i = I / 2; i < I; i++) {
+        for (int j = J / 2; j < J; j++) {
+            for (int k = K / 2; k < K; k++) {
+                A.insert({i, j, k}, (i + j + k + 1));
+                aSize++;
+            }
+        }
+    }
+
+    // sparse
+    SparseMatrix B;
+    std::vector<SparseMatrixTuple> groundTruth;
+
+    for (int i = 0; i < I / 2; i += stride) {
+        for (int j = 0; j < J / 2; j += stride) {
+            for (int k = 0; k < K / 2; k += stride) {
+                B.insert({i, j, k}, 2);
+                groundTruth.push_back({{i, j, k}, 2.0 * (i + j + k + 1)});
+                bSize++;
+            }
+        }
+    }
+
+    auto t2 = high_resolution_clock::now();
+    auto ms_int = duration_cast<milliseconds>(t2 - t1);
+
+    duration<double, std::milli> ms_double = t2 - t1;
+    std::cout << "A size = " << aSize << std::endl;
+    std::cout << "B size = " << bSize << std::endl;
+
+    std::cout << "Matrix construction ended!" << std::endl;
+
+    t1 = high_resolution_clock::now();
+    for (int i = 0; i < executionTimes; i++) {
+        SparseMatrix C = A * B;
+        assert(C.size() == 0);
+    }
+    t2 = high_resolution_clock::now();
+    ms_int = duration_cast<milliseconds>(t2 - t1);
+
+    ms_double = t2 - t1;
+    std::cout << ms_int.count() << "ms\n";
+    std::cout << ms_double.count() << "ms\n";
+    std::cout << "Test completed, Matrices are equal!" << std::endl;
+
+    t1 = high_resolution_clock::now();
+    A.setMultiplicationStrategy(BLINDLY_THREADED_TREE);
+    for (int i = 0; i < executionTimes; i++) {
+        SparseMatrix C = A * B;
+        assert(C.size() == 0);
+    }
+    t2 = high_resolution_clock::now();
+    ms_int = duration_cast<milliseconds>(t2 - t1);
+
+    ms_double = t2 - t1;
+    std::cout << ms_int.count() << "ms\n";
+    std::cout << ms_double.count() << "ms\n";
+    std::cout << "Test completed, Matrices are equal!" << std::endl;
 }
 
 void testParallelThreadedMultiplicationOneDim() {
