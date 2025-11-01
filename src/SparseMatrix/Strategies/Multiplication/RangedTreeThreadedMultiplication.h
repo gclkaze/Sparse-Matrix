@@ -22,24 +22,22 @@ class RangedTreeThreadedMultiplication : public IMultiplicationStrategy {
             return C;
         }
 
-        FlatNode visitLeft = A->getNodes()[0];
-        FlatNode visitRight = B->getNodes()[0];
-
-        findRangedThreadedCommonIndices(visitLeft, visitRight, A, B, C);
+        findRangedThreadedCommonIndices(A, B, C);
 
         return C;
     }
 
   private:
-    void findRangedThreadedCommonIndices(FlatNode &visitLeft,
-                                         FlatNode &visitRight,
+    void findRangedThreadedCommonIndices(
                                          ISparseMatrix *me,
                                          ISparseMatrix *other,
                                          ISparseMatrix *result) {
 
+        FlatNode visitLeft = me->getNodes()[0];
+        FlatNode visitRight = other->getNodes()[0];
+
         auto info = collectIndexInformation(visitLeft, visitRight, me, other);
         std::vector<std::thread> workers;
-
         // each thread, it handles m_RangeElementsPerThread indices
         std::vector<CommonOffset> offsets;
         offsets.reserve(m_RangeElementsPerThread);

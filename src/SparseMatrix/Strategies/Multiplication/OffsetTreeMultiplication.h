@@ -18,11 +18,7 @@ class OFfsetTreeMultiplication : public IMultiplicationStrategy {
             return C;
         }
 
-        FlatNode visitLeft = A->getNodes()[0];
-        FlatNode visitRight = B->getNodes()[0];
-
-        std::unique_ptr<CommonOffsets> common =
-            findCommonIndices(visitLeft, visitRight, A, B);
+        std::unique_ptr<CommonOffsets> common = findCommonIndices(A, B);
         assert(common);
 
         if (!common->actualSize) {
@@ -40,6 +36,7 @@ class OFfsetTreeMultiplication : public IMultiplicationStrategy {
         std::vector<FlatChildEntry> &flatChildren = A->getFlatChildren();
         std::vector<FlatChildEntry> &otherChildren = B->getFlatChildren();
 
+      
         for (const CommonOffset &offset : common.get()->offsets) {
 
             int left = offset.indexLeft;
@@ -48,11 +45,11 @@ class OFfsetTreeMultiplication : public IMultiplicationStrategy {
             int leftNode = flatChildren[left].nodeIndex;
             int rightNode = otherChildren[right].nodeIndex;
 
-            visitLeft = (myNodes)[leftNode];
-            visitRight = (otherNodes)[rightNode];
+            FlatNode visitLeft = (myNodes)[leftNode];
+            FlatNode visitRight = (otherNodes)[rightNode];
 
             t.push_back(offset.tupleKey);
-            
+
             if (visitLeft.isLeaf && visitRight.isLeaf) {
                 // do the operation
                 m_Multi++;
@@ -62,7 +59,7 @@ class OFfsetTreeMultiplication : public IMultiplicationStrategy {
                 continue;
             }
 
-            reduceTree(visitLeft, visitRight, A, B,C, &t, 1);
+            reduceTree(visitLeft, visitRight, A, B, C, &t, 1);
             t.pop_back();
         }
 
@@ -71,54 +68,24 @@ class OFfsetTreeMultiplication : public IMultiplicationStrategy {
         return C;
     }
 
-    std::unique_ptr<CommonOffsets> findCommonIndices(FlatNode &visitLeft,
-                                         FlatNode &visitRight,
-                                          ISparseMatrix *me,
-                                          ISparseMatrix *other) {
+    std::unique_ptr<CommonOffsets> findCommonIndices(
+                                                     ISparseMatrix *me,
+                                                     ISparseMatrix *other) {
 
+        FlatNode visitLeft = me->getNodes()[0];
+        FlatNode visitRight = other->getNodes()[0];
         // lets find the root nodes for each
-        int offsetLeft = visitLeft.childOffset;
-        int maxOffsetLeft = visitLeft.numChildren;
-        std::vector<int> indicesLeft;
-        indicesLeft.reserve(maxOffsetLeft);
-        std::vector<int> indicesLeftPos;
-        indicesLeftPos.reserve(maxOffsetLeft);
-
-        std::vector<FlatChildEntry> &myflatChildren = me->getFlatChildren();
-
-        for (int i = offsetLeft; i < offsetLeft + maxOffsetLeft; i++) {
-            indicesLeft.push_back(myflatChildren[i].tupleIndex);
-            indicesLeftPos.push_back(i);
-        }
-
-        int offsetRight = visitRight.childOffset;
-        int maxOffsetRight = visitRight.numChildren;
-
-        std::vector<int> indicesRight;
-        indicesRight.reserve(maxOffsetRight);
-        std::vector<int> indicesRightPos;
-        indicesRightPos.reserve(maxOffsetRight);
-
-        std::vector<FlatChildEntry> &otherflatChildren =
-            other->getFlatChildren();
-
-        for (int i = offsetRight; i < offsetRight + maxOffsetRight; i++) {
-            indicesRight.push_back(otherflatChildren[i].tupleIndex);
-            indicesRightPos.push_back(i);
-        }
-
-        int maxSize =
-            maxOffsetLeft < maxOffsetRight ? maxOffsetRight : maxOffsetLeft;
         std::vector<CommonOffset> offsets;
+        auto info = collectIndexInformation(visitLeft, visitRight, me, other);
+        int j = info->rightIndices[0];
 
-        int j = indicesRight[0];
-        for (int i = 0; i < maxOffsetLeft; i++) {
-            int indexLeft = indicesLeft[i];
-            for (; j < maxOffsetRight; j++) {
-                int indexRight = indicesRight[j];
+        for (int i = 0; i < info->maxOffsetLeft; i++) {
+            int indexLeft = info->leftIndices[i];
+            for (; j < info->maxOffsetRight; j++) {
+                int indexRight = info->rightIndices[j];
                 if (indexLeft == indexRight) {
-                    offsets.push_back(
-                        {indicesLeftPos[i], indicesRightPos[j], indexRight});
+                    offsets.push_back({info->leftIndexPos[i],
+                                       info->rightIndexPos[j], indexRight});
                     j++;
                     break;
                 }
@@ -129,7 +96,8 @@ class OFfsetTreeMultiplication : public IMultiplicationStrategy {
         }
 
         auto ptr = std::unique_ptr<CommonOffsets>{
-            new CommonOffsets{offsets, maxSize, (int)offsets.size()}};
+            new CommonOffsets{offsets, info->maxSize, (int)offsets.size()}};
+        info.release();
         return ptr;
     }
 };

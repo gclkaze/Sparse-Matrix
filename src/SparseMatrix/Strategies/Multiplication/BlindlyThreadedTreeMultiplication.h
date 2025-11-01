@@ -15,20 +15,19 @@ class BlindlyThreadedTreeMultiplication : public IMultiplicationStrategy {
             return C;
         }
 
-        FlatNode visitLeft = A->getNodes()[0];
-        FlatNode visitRight = B->getNodes()[0];
-
-        findThreadedCommonIndices(visitLeft, visitRight, A, B, C);
+        findThreadedCommonIndices(A, B, C);
         return C;
     }
 
   private:
-    void findThreadedCommonIndices(FlatNode &visitLeft, FlatNode &visitRight,
+    void findThreadedCommonIndices(
                                    ISparseMatrix *me, ISparseMatrix *other,
                                    ISparseMatrix *result) {
 
-        auto info = collectIndexInformation(visitLeft, visitRight, me, other);
+        FlatNode visitLeft = me->getNodes()[0];
+        FlatNode visitRight = other->getNodes()[0];
         std::vector<std::thread> workers;
+        auto info = collectIndexInformation(visitLeft, visitRight, me, other);
 
         // lets find common root nodes
         int j = info->rightIndices[0];
