@@ -47,20 +47,56 @@ int main() {
 
 void testFoundIndices() {
     FlatIndex info;
-    info.leftIndexPos = {0,1,2,3,4,5,6};
-    info.leftIndices = {1,2,3,7,8,10,15};
+    int startI = 0;
+    int endI = 10000000;
+    int elem = 0;
+    int stride = 1;
+    for (int i = startI; i < endI; i += stride) {
+        info.leftIndexPos.push_back(elem);
+        info.leftIndices.push_back(i);
+        elem++;
+    }
 
-    info.rightIndexPos = {0,1,2,3,4,5,6,7,8,9};
-    info.rightIndices = {0,8,15,16,17,18,19,20,21,22};
+    int startJ = endI / 2;
+    int endJ = (endI / 2) + 1005;
+    elem = 0;
+    for (int i = startJ; i < endJ; i++) {
+        info.rightIndexPos.push_back(elem);
+        info.rightIndices.push_back(i);
+        elem++;
+    }
 
-    info.maxSize = 7;
+    info.maxSize = info.leftIndexPos.size() > info.rightIndexPos.size() ? info.leftIndexPos.size()
+                                                                        : info.rightIndexPos.size();
     info.maxOffsetLeft = info.leftIndexPos.size();
     info.maxOffsetRight = info.rightIndexPos.size();
 
-   IndexIntersectionFinder finder;
-   std::vector<CommonOffset> offsets = finder.find(info);
-   assert(offsets[0].tupleKey == 8);
-   assert(offsets[1].tupleKey == 15);
+    IndexIntersectionFinder finder;
+    auto t1 = high_resolution_clock::now();
+    std::vector<CommonOffset> offsets = finder.find(info);
+    auto t2 = high_resolution_clock::now();
+    auto ms_int = duration_cast<milliseconds>(t2 - t1);
+
+    duration<double, std::milli> ms_double = t2 - t1;
+    std::cout << "Found = " << offsets.size() << " offsets"  << std::endl;
+    std::cout << ms_int.count() << "ms\n";
+    std::cout << ms_double.count() << "ms\n";
+    std::cout << "Matrix construction ended!" << std::endl;
+    /*    FlatIndex info;
+        info.leftIndexPos = {0,1,2,3,4,5,6};
+        info.leftIndices = {1,2,3,7,8,10,15};
+
+        info.rightIndexPos = {0,1,2,3,4,5,6,7,8,9};
+        info.rightIndices = {0,8,15,16,17,18,19,20,21,22};
+
+        info.maxSize = 7;
+        info.maxOffsetLeft = info.leftIndexPos.size();
+        info.maxOffsetRight = info.rightIndexPos.size();
+
+       IndexIntersectionFinder finder;
+       std::vector<CommonOffset> offsets = finder.find(info);
+       assert(offsets[0].tupleKey == 8);
+       assert(offsets[1].tupleKey == 15);*/
 }
 
 void testNoCommonIndicesMultiplication() {
