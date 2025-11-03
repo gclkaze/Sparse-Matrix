@@ -1,6 +1,3 @@
-# Sparse-Matrix
-A class that represents a Sparse Matrix by storing tuple/data nodes and tuple connections in std::vectors rather than pointers. A SparseMatrix iterator is provided for looping through the tuples.
-
 # Reason
 Insert non-continuous tuples and their associated values and be able to iterate over them in a sorted and intuitive way.
 
@@ -29,7 +26,7 @@ for (int i = I / 2; i < I; i+=stride) {
     }
 }
 
-//getValue, if the tuple doesn't exists, the method returns 0.0f;
+//getValue, if the tuple doesn't exists, the method returns 0.0f
 assert(A.getValue({1,1,1}) == 0.0f);
 assert(A.getValue({I/2,J/2,K/2}) == 151.0f);
 
@@ -45,6 +42,17 @@ assert(A.erase({I/2,J/2,K/2}) == true);
 //clear will clean the internal state of the Sparse Matrix
 A.clear();
 assert ( A.size() == 0);
+
+SparseMatrix B;
+//B insertions ...
+//unequality operator for the Sparse Matrix objects
+assert ( A != B );
+
+//equality operator for the Sparse Matrix objects
+assert ( !(A == B) );
+
+//multiplication and assignment
+Sparse D = A * B;
 
 
 ```
@@ -67,7 +75,6 @@ A.insert({10, 6, 1}, 9);
 A.insert({1, 3, 1}, 10);
 
 SparseMatrixIterator iterator = A.iterator();
-int i = 0;
 for (const SparseMatrixTuple& tuple : iterator) {
     tuple.dump();
 }
@@ -89,7 +96,7 @@ for (const SparseMatrixTuple& tuple : iterator) {
 # Implementation
 Used a ___flatten generic tree implementation approach___, where the Sparse Matrix uses two Arrays for the information representation; a __Children__ array and a __Node__ array. We used arrays in order to not use pointer logic where an object can be stored anywhere in memory (pointer chasing) while by using arrays we utilize contiguous memory and obtain better __cache locality__.
 
-# Thread Safety
+## Thread Safety
 Yes, it uses an atomic flag for test and set semantics, locking the data structure allowing insertions/deletions by
 one thread at a time. In the todos, a lock-free implementation of the Sparse Matrix will be designed (or adjust the current design).
 
@@ -266,3 +273,16 @@ Insert: {0,5,6} = 155
 
 
 Depicted Tuples: {1,5,6} = 11, {6,5,6} = 13, {4,5,6} =  133, {5,5,6} = 143, {0,5,6} = 155
+
+# Sparse Matrix Multiplication
+We implemented the multiplication operation in 5 different ways:
+* Tuple Iteration
+* Late Sequential Tuple Comparison Iteration
+* Ranged Threaded Tree Multiplication
+* Offset Tree Multiplication
+* Blindly Threaded Tree Multiplication
+
+
+The default __operator*__ for the Sparse Matrix is the __Ranged Threaded Tree Multiplication algorithm__.
+
+The remaining multiplication method to be implemented is by using our __Sparse Matrices within CUDA__ ; that was also the reason of the existence of this whole implementation, to measure all implementations against the CUDA C++ one and see who is the winner.
