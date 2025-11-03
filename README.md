@@ -1,6 +1,91 @@
 # Sparse-Matrix
 A class that represents a Sparse Matrix by storing tuple/data nodes and tuple connections in std::vectors rather than pointers. A SparseMatrix iterator is provided for looping through the tuples.
 
+# Reason
+Insert non-continuous tuples and their associated values and be able to iterate over them in a sorted and intuitive way.
+
+# Usage
+See below the API usage of the Sparse Matrix.
+
+### API
+```
+#include "SparseMatrix/SparseMatrix.h"
+
+...
+SparseMatrix A;
+int I = 100;
+int J = 100;
+int K = 100;
+int stride = 3;
+int aSize = 0;
+
+for (int i = I / 2; i < I; i+=stride) {
+    for (int j = J / 2; j < J; j++) {
+        for (int k = K / 2; k < K; k++) {
+            //if there was a success, insert returns true
+            assert ( A.insert({i, j, k}, (i + j + k + 1)) );
+            aSize ++;
+        }
+    }
+}
+
+//getValue, if the tuple doesn't exists, the method returns 0.0f;
+assert(A.getValue({1,1,1}) == 0.0f);
+assert(A.getValue({I/2,J/2,K/2}) == 151.0f);
+
+//size()
+assert(A.size() == aSize);
+
+//erase will return false if the tuple is not present in the Sparse Matrix
+assert(A.erase({0,0,0}) == false);
+
+//erase will return true if the tuple is present
+assert(A.erase({I/2,J/2,K/2}) == true);
+
+//clear will clean the internal state of the Sparse Matrix
+A.clear();
+assert ( A.size() == 0);
+
+
+```
+
+### Iterator
+```
+#include "SparseMatrix/SparseMatrix.h"
+...
+
+A.insert({10, 5, 2}, 4);
+A.insert({10, 5, 3}, 5);
+A.insert({10, 5, 4}, 6);
+A.insert({10, 5, 5}, 7);
+A.insert({10, 5, 6}, 8);
+
+A.insert({1, 1, 10}, 2);
+A.insert({1, 2, 3}, 3);
+A.insert({1, 1, 1}, 1);
+A.insert({10, 6, 1}, 9);
+A.insert({1, 3, 1}, 10);
+
+SparseMatrixIterator iterator = A.iterator();
+int i = 0;
+for (const SparseMatrixTuple& tuple : iterator) {
+    tuple.dump();
+}
+
+/* The output of the ranged for-loop will be sorted by tuple index as follows: 
+{1, 1, 1}:= 1
+{1, 1, 10}:= 2
+{1, 2, 3}:= 3
+{1, 3, 1}:= 10
+{10, 5, 2}:= 4
+{10, 5, 3}:= 5
+{10, 5, 4}:= 6
+{10, 5, 5}:= 7
+{10, 5, 6}:= 8
+{10, 6, 1}:= 9
+*/
+```
+
 # Implementation
 Used a ___flatten generic tree implementation approach___, where the Sparse Matrix uses two Arrays for the information representation; a __Children__ array and a __Node__ array. We used arrays in order to not use pointer logic where an object can be stored anywhere in memory (pointer chasing) while by using arrays we utilize contiguous memory and obtain better __cache locality__.
 
