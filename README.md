@@ -4,6 +4,15 @@ Insert non-continuous tuples and their associated values and be able to iterate 
 # Usage
 See below the API usage of the Sparse Matrix.
 
+### Compile
+Built with C++ GCC 15.2.0 under Windows, could be easily altered for Linux, it does not use any windows API call.
+```
+#To compile and run main:
+
+cd src
+make compile
+./a.exe 
+```
 ### API
 ```
 #include "SparseMatrix/SparseMatrix.h"
@@ -106,7 +115,7 @@ We use the nodes to hold values and tuple hop information, and the children to h
 
 The following scenarios will show you the insertion process; where all changes in the existing registrations are showed in __"bold"__.  
 
-Initially:
+I. Initially:
 | Children |             |            |
 | -------- | ----------- | ---------- |
 | I        | Tuple Index | Node Index |
@@ -116,7 +125,7 @@ Initially:
 | I | Child Offset | NumChildren | Leaf | Value |
 | 0 | 0            | 0           | 0    |       |
 
-Insert: {1,5,6} = 11
+II. Insert: {1,5,6} = 11
 | Children |             |            |
 | -------- | ----------- | ---------- |
 | I        | Tuple Index | Node Index |
@@ -134,7 +143,7 @@ Insert: {1,5,6} = 11
 
 Depicted Tuples: {1,5,6} = 11
 
-Insert: {6,5,6} = 13
+III. Insert: {6,5,6} = 13
 
 | Children |             |            |  |  
 | -------- | ----------- | ---------- | -------- |
@@ -160,7 +169,7 @@ Insert: {6,5,6} = 13
 Depicted Tuples: {1,5,6} = 11, {6,5,6} = 13
 
 
-Insert: {4,5,6} = 133
+IV. Insert: {4,5,6} = 133
 
 | Children |             |            |          |
 | ------------- | ----------- | ---------- | -------- |
@@ -192,7 +201,7 @@ Insert: {4,5,6} = 133
 
 Depicted Tuples: {1,5,6} = 11, {6,5,6} = 13, {4,5,6} =  133
 
-Insert: {5,5,6} = 143
+V. Insert: {5,5,6} = 143
 
 | Children |             |            |          |
 | ------------- | ----------- | ---------- | -------- |
@@ -229,7 +238,7 @@ Insert: {5,5,6} = 143
 
 Depicted Tuples: {1,5,6} = 11, {6,5,6} = 13, {4,5,6} =  133, {5,5,6} = 143
 
-Insert: {0,5,6} = 155
+VI. Insert: {0,5,6} = 155
 
 | Children |             |            |          |
 | ------------- | ----------- | ---------- | -------- |
@@ -275,13 +284,19 @@ Insert: {0,5,6} = 155
 Depicted Tuples: {1,5,6} = 11, {6,5,6} = 13, {4,5,6} =  133, {5,5,6} = 143, {0,5,6} = 155
 
 # Sparse Matrix Multiplication
-We implemented the multiplication operation in 5 different ways:
+The multiplication operation was implemented in 5 different ways:
 * Tuple Iteration
 * Late Sequential Tuple Comparison Iteration
 * Ranged Threaded Tree Multiplication
 * Offset Tree Multiplication
 * Blindly Threaded Tree Multiplication
 
+The __general idea__ is that:
+1. we would like to loop over the indices of the Sparse Matrix that has less size,
+2. then retieve the tuples for each matrix and compare the tuples.
+3. if the tuples are equal we perform the multiplication of their values, 
+4. otherwise, we compare and move the iterators accordingly; if Ta was larger than Tb, we move Itb++ otherwise
+  we move Ita++ further, by keeping in mind if the iterators reached at their end. 
 
 The default __operator*__ for the Sparse Matrix is the __Ranged Threaded Tree Multiplication algorithm__.
 
