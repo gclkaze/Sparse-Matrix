@@ -298,6 +298,30 @@ The __general idea__ is that:
 4. otherwise, we compare and move the iterators accordingly; if Ta was larger than Tb, we move Itb++ otherwise
   we move Ita++ further, by keeping in mind if the iterators reached at their end. 
 
-The default __operator*__ for the Sparse Matrix is the __Ranged Threaded Tree Multiplication algorithm__.
+### Method Descriptions
+
+| Name            | Steps per Method                                                                                                            |
+| --------------- | --------------------------------------------------------------------------------------------------------------- |
+| __Tuple Iteration__ | 1\. Retieve the tuples for each matrix and compare the tuples.                                                  |
+|                 | 2\. if the tuples are equal we perform the multiplication of their values,                                      |
+|                 | 3\. otherwise, we compare and move the iterators accordingly; if Ta was larger than Tb, we move Itb++ otherwise |
+|                 | we move Ita++ further, by keeping in mind if the iterators reached at their end.                                |
+| __Late Sequential Tuple Comparison Iteration__ | 1\. Retieve the tuples for each matrix and compare the tuples. |
+|                                            | 2\. First iterate to the next pair tuples, then compare.       |
+| __Offset Tree Multiplication__ | 1\. Find common indices per tuple position, starting from 0.                                                                          |
+|                            | 2\. If there are no common indices, the multiplication result is 0.                                                                   |
+|                            | 3\. Obtain the common indices and continue to the next level (tuple position), then repeat until you find the value (isLeaf == true). |
+|                            | 4\. Perform insert on the common tuple and assign the multiplication result.                                                          |
+| __Blindly Threaded Tree Multiplication__ | 1.Find common indices per tuple position, starting from 0.                                                                                                               |
+|                                      | 2\. If there are no common indices, the multiplication result is 0.                                                                                                      |
+|                                      | 3\. For each common index, start __a thread__ that reduces the common index tree to the multiplication result, by recursively traverses to common indices inside both Trees. |
+|                                      | 4\. The thread performs an insert operation on the common tuple and assign the multiplication result.                                                                    |
+| __Ranged Threaded Tree Multiplication__ | 1.Find common indices per tuple position, starting from 0.                                                                                                                                                                                                 |
+|                                     | 2\. If there are no common indices, the multiplication result is 0.                                                                                                                                                                                         |
+|                                     | 3\. For each common index, store the index in an array that has max limit of common indices.                                                                                                                                                                 |
+|                                     | 4\. If the array limit is surpassed, then start __a thread__ that reduces the common index tree to the multiplication result, by recursively traverse to common indices inside both Trees. The started thread operates in the array of common indices-offsets. |
+
+
+The default __operator*__ for the Sparse Matrix is the __Ranged Threaded Tree Multiplication algorithm__, because it is the fastest.
 
 The remaining multiplication method to be implemented is by using our __Sparse Matrices within CUDA__ ; that was also the reason of the existence of this whole implementation, to measure all implementations against the CUDA C++ one and see who is the winner.
