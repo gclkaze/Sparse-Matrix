@@ -1,4 +1,4 @@
-An intuititve class that represents a Sparse Matrix by storing non-continuous tuple/data nodes and tuple connections in std::vectors rather than pointers. A SparseMatrix iterator is provided for looping through the tuples.
+An intuitive class that represents a Sparse Matrix by storing non-continuous tuple/data nodes and tuple connections in std::vectors rather than pointers. A SparseMatrix iterator is provided for looping through the tuples.
 
 # Usage
 See below the API usage of the Sparse Matrix.
