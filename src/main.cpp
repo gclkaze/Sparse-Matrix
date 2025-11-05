@@ -26,6 +26,7 @@ void testParallelThreadedMultiplication();
 void testParallelThreadedMultiplicationOneDim();
 void testNoCommonIndicesMultiplication();
 
+void demo();
 void testFoundIndices();
 int main() {
     /*        testInsert();
@@ -41,7 +42,8 @@ int main() {
 
             testParallelThreadedMultiplicationOneDim();
             testNoCommonIndicesMultiplication();*/
-    testFoundIndices();
+//    testFoundIndices();
+    demo();
     std::cout << "End of Tests!" << std::endl;
 }
 
@@ -78,7 +80,7 @@ void testFoundIndices() {
     auto ms_int = duration_cast<milliseconds>(t2 - t1);
 
     duration<double, std::milli> ms_double = t2 - t1;
-    std::cout << "Found = " << offsets.size() << " offsets"  << std::endl;
+    std::cout << "Found = " << offsets.size() << " offsets" << std::endl;
     std::cout << ms_int.count() << "ms\n";
     std::cout << ms_double.count() << "ms\n";
     std::cout << "Matrix construction ended!" << std::endl;
@@ -97,6 +99,27 @@ void testFoundIndices() {
        std::vector<CommonOffset> offsets = finder.find(info);
        assert(offsets[0].tupleKey == 8);
        assert(offsets[1].tupleKey == 15);*/
+}
+
+void demo() {
+    int I = 100,J = 100,K = 100;
+    SparseMatrix A, B, C;
+    for (int i = I / 2; i < I; i++) {
+        for (int j = J / 2; j < J; j++) {
+            for (int k = K / 2; k < K; k++) {
+                A.insert({i, j, k}, (i + j + k + 1));
+            }
+        }
+    }
+    for (int i = 0; i <= I/2; i++) {
+        for (int j = 0; j <= J/2; j++) {
+            for (int k = 0; k <= K/2; k++) {
+                B.insert({i, j, k}, (i + j + k + 1));
+            }
+        }
+    }
+    C = A * B;
+    assert(C.size() == 1);
 }
 
 void testNoCommonIndicesMultiplication() {
