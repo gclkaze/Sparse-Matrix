@@ -36,7 +36,7 @@ class BlindlyThreadedTreeMultiplication : public IMultiplicationStrategy {
             for (; j < info->maxOffsetRight; j++) {
                 int indexRight = info->rightIndices[j];
                 if (indexLeft == indexRight) {
-                    workers.emplace_back(BlindlyThreadedTreeMultiplication::parallelMultiplication,
+                    workers.emplace_back(&BlindlyThreadedTreeMultiplication::parallelMultiplication,
                                          this, info->leftIndexPos[i], info->rightIndexPos[j],
                                          indexRight, me, other, result);
 

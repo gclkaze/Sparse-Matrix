@@ -129,7 +129,7 @@ class IMultiplicationStrategy {
         ptr->maxOffsetLeft = maxOffsetLeft;
         ptr->maxOffsetRight = maxOffsetRight;
 
-        return (ptr);
+        return ptr;
     }
 };
 #endif

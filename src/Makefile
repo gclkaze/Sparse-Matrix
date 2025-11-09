@@ -3,7 +3,9 @@ allWarnings:
 all:
 	g++ main.cpp -o a.exe 
 compile:
-	g++ -O2 main.cpp -o a.exe -pedantic  -Wswitch-default -Wundef -Werror -Wno-unused
+#	g++ -O2 main.cpp -o a.exe -pedantic  -Wswitch-default -Wundef -Werror -Wno-unused
+	nvcc -O2 main.cpp SparseMatrix/Strategies/Multiplication/GPUMultiplicationKernel.cu -o a.exe 
+
 opt:
 	g++ -O2 main.cpp -o a.exe
 clean:

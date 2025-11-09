@@ -86,23 +86,38 @@ class SparseMatrix : public ISparseMatrix {
 
     bool insert(const std::vector<int>& tuple, double value) override {
         while (m_Lock->test_and_set(std::memory_order_acquire));
+        std::cout << "test and set " << value << std::endl;
         if (value == 0.0) {
             bool succeeded = erase(tuple);
             m_Lock->clear(std::memory_order_release);
             return succeeded;
         }
-
+        std::cout << "tuple size " << std::endl;
         assert(tuple.size() > 0);
-
         if (m_Nodes.size() == 0) {
             // root is empty
-            m_Nodes.push_back({0, false, 0, 0, 0});
+            std::cout << "root initstart " << std::endl;
+
+            m_Nodes.push_back({0, 0, false, 0, 0});
+            std::cout << "before put" << std::endl;
             put(tuple, value);
+            std::cout << "after put" << std::endl;
+            std::cout << "lock clear" << std::endl;
+
             m_Lock->clear(std::memory_order_release);
+            std::cout << "root init end " << std::endl;
+
             return true;
         }
+
+        assert(m_Nodes.size() > 0);
+
+        std::cout << "before put" << std::endl;
         put(tuple, value);
+        std::cout << "after put" << std::endl;
+
         m_Lock->clear(std::memory_order_release);
+        std::cout << "lock clear" << std::endl;
         return true;
     }
 
@@ -194,7 +209,7 @@ class SparseMatrix : public ISparseMatrix {
         SparseMatrix result;
         if (m_Size <= other.m_Size) {
             ptr.get()->multiply(this, &other, &result);
-        }else {
+        } else {
             ptr.get()->multiply(&other, this, &result);
         }
         return result;
@@ -202,10 +217,12 @@ class SparseMatrix : public ISparseMatrix {
 
    private:
     void put(const std::vector<int>& tuple, const double value) {
+        //std::cout << "put " << std::endl;
         int tupleSize = static_cast<int>(tuple.size());
         if (tupleSize == 0) {
             return;
         }
+        //std::cout << "put 2" << tuple.size() << std::endl;
         FlatNode* current = &m_Nodes[0];
         SearchStatus status = none;
         int flatChildrenPos = 0;
@@ -213,16 +230,28 @@ class SparseMatrix : public ISparseMatrix {
         int node = -1;
         int nodesAmount = -1;
         bool insertion = false;
+      //  std::cout << "put 3" << tuple.size() << std::endl;
 
         for (int i = 0; i < tupleSize; i++) {
+            //  std::cout << "find start end" << std::endl;
+//            std::cout << "find tuple start" << std::endl;
+        //    std::cout << i << " => " << tuple[i] << std::endl;
+            std::cout << current << std::endl;
+            std::cout << current->numChildren << std::endl;
+            std::cout << current->childOffset << std::endl;
+     /*       std::cout << status << std::endl;*/
+
             if (!notAMatch) {
                 flatChildrenPos = this->findTheTuple(tuple[i], current->numChildren,
                                                      current->childOffset, &status);
             }
+       //     std::cout << "find tuple end" << status << std::endl;
 
             switch (status) {
                 case larger:
                 case smaller: {
+                    //            std::cout << "larger smaller" << std::endl;
+
                     current->numChildren++;
                     nodesAmount = m_Nodes.size();
                     m_FlatChildren.insert(m_FlatChildren.begin() + flatChildrenPos,
@@ -232,6 +261,7 @@ class SparseMatrix : public ISparseMatrix {
                     status = none;
                     notAMatch = true;
                     insertion = true;
+                    // std::cout <<"larger smaller end" <<std::endl;
                     break;
                 }
                 case equal: {
@@ -245,6 +275,7 @@ class SparseMatrix : public ISparseMatrix {
 
                 case none: {
                     // the path does not exist at all
+                    //  std::cout << "none" << std::endl;
                     current->numChildren++;
 
                     // we did our stuff with the parent node, lets continue to the
@@ -253,6 +284,7 @@ class SparseMatrix : public ISparseMatrix {
                     current = saveNode(i + 1 < tupleSize, nodesAmount, value, current, true);
                     m_FlatChildren.push_back({tuple[i], nodesAmount});
                     insertion = true;
+                    //                      std::cout <<"none end" <<std::endl;
                     break;
                 }
                 default: {
@@ -562,7 +594,7 @@ class SparseMatrix : public ISparseMatrix {
 
             assert(child.childOffset == groundTruth[0]);
             assert(child.numChildren == groundTruth[1]);
-            assert(child.isLeaf == groundTruth[2]);
+            assert(child.isLeaf == (bool)groundTruth[2]);
             assert(child.value == groundTruth[3]);
         }
         return true;

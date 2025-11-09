@@ -5,6 +5,7 @@ enum MultiplicationTypes {
     BLINDLY_THREADED_TREE,
     LATE_COMPARISON,
     TUPLE_ITERATION,
-    OFFSET_TREE
+    OFFSET_TREE,
+    GPU_MULTIPLICATION
 };
 #endif

@@ -51,7 +51,7 @@ class RangedTreeThreadedMultiplication : public IMultiplicationStrategy {
 
                     if (offsets.size() == m_RangeElementsPerThread) {
                         workers.emplace_back(
-                            RangedTreeThreadedMultiplication::parallelRangedMultiplication, this,
+                           & RangedTreeThreadedMultiplication::parallelRangedMultiplication, this,
                             offsets, me, other, result);
 
                         offsets.clear();
@@ -66,7 +66,7 @@ class RangedTreeThreadedMultiplication : public IMultiplicationStrategy {
         }
 
         if (!offsets.empty()) {
-            workers.emplace_back(RangedTreeThreadedMultiplication::parallelRangedMultiplication,
+            workers.emplace_back(&RangedTreeThreadedMultiplication::parallelRangedMultiplication,
                                  this, offsets, me, other, result);
         }
 

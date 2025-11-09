@@ -11,6 +11,7 @@
 #include "OffsetTreeMultiplication.h"
 #include "RangedTreeThreadedMultiplication.h"
 #include "TupleIteratorMultiplication.h"
+#include "GPUSparseMultiplication.h"
 
 class MultiplicationStrategyFactory {
    public:
@@ -34,6 +35,10 @@ class MultiplicationStrategyFactory {
             }
             case TUPLE_ITERATION: {
                 auto ptr = std::make_unique<TupleIteratorMultiplication>();
+                return std::move(ptr);
+            }
+            case GPU_MULTIPLICATION:{
+                auto ptr = std::make_unique<GPUSparseMultiplication>();
                 return std::move(ptr);
             }
             default: {

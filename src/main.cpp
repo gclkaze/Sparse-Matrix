@@ -28,23 +28,74 @@ void testNoCommonIndicesMultiplication();
 
 void demo();
 void testFoundIndices();
+void testGPUMultiplication();
 int main() {
-    /*        testInsert();
-            testDelete();
-            testIterator();
-            testIteratorPerf();
-            testMultiplication();
-            testMultiplicationPerfMulti();
-            testMultiplicationNew();
-            testMultiplicationNewPerf();
-            testParallelThreadedMultiplication();
-            testMultiplicationPerf();
+    /*    testInsert();
+        testDelete();
+        testIterator();
+        testIteratorPerf();
+        testMultiplication();
+        testMultiplicationPerfMulti();
+        testMultiplicationNew();
+        testMultiplicationNewPerf();
+        testParallelThreadedMultiplication();
+        testMultiplicationPerf();
 
-            testParallelThreadedMultiplicationOneDim();
-            testNoCommonIndicesMultiplication();*/
-//    testFoundIndices();
-    demo();
+        testParallelThreadedMultiplicationOneDim();
+        testNoCommonIndicesMultiplication();
+        testFoundIndices();*/
+    //  demo();
+   // testGPUMultiplication();
+   testMultiplicationNewPerf();
     std::cout << "End of Tests!" << std::endl;
+}
+void testGPUMultiplication() {
+    /*    int I = 100, J = 100, K = 100;
+        SparseMatrix A, B, C;
+        for (int i = I / 2; i < I; i++) {
+            for (int j = J / 2; j < J; j++) {
+                for (int k = K / 2; k < K; k++) {
+                    A.insert({i, j, k}, (i + j + k + 1));
+                }
+            }
+        }
+        for (int i = 0; i <= I / 2; i++) {
+            for (int j = 0; j <= J / 2; j++) {
+                for (int k = 0; k <= K / 2; k++) {
+                    B.insert({i, j, k}, (i + j + k + 1));
+                }
+            }
+        }*/
+    SparseMatrix A;
+    A.insert({12, 1, 1}, 2);
+    A.insert({11, 1, 1}, 2);
+    A.insert({13, 1, 1}, 2);
+    A.insert({1000, 1, 1}, 2);
+    A.insert({4, 1, 1}, 2);
+
+    A.insert({1, 1, 1}, 2);
+    A.insert({1, 1, 2}, 3);
+    A.insert({1, 2, 1}, 4);
+    A.insert({50, 2, 1}, 5);
+
+    SparseMatrix B;
+    B.insert({1, 1, 1}, 2);
+    B.insert({1, 1, 20}, 3);
+    B.insert({1, 20, 1}, 4);
+    B.insert({50, 2, 1}, 5);
+    A.setMultiplicationStrategy(GPU_MULTIPLICATION);
+    SparseMatrix C = A * B;
+    assert(C.size() == 2);
+    SparseMatrixIterator iterator = C.iterator();
+
+    int i = 0;
+    std::vector<SparseMatrixTuple> groundTruth;
+    groundTruth.push_back({{1, 1, 1}, 4});
+    groundTruth.push_back({{50, 2, 1}, 25});
+
+    for (const SparseMatrixTuple& tuple : iterator) {
+        assertTupleEquality(tuple, groundTruth[i++]);
+    }
 }
 
 void testFoundIndices() {
@@ -102,7 +153,7 @@ void testFoundIndices() {
 }
 
 void demo() {
-    int I = 100,J = 100,K = 100;
+    int I = 100, J = 100, K = 100;
     SparseMatrix A, B, C;
     for (int i = I / 2; i < I; i++) {
         for (int j = J / 2; j < J; j++) {
@@ -111,9 +162,9 @@ void demo() {
             }
         }
     }
-    for (int i = 0; i <= I/2; i++) {
-        for (int j = 0; j <= J/2; j++) {
-            for (int k = 0; k <= K/2; k++) {
+    for (int i = 0; i <= I / 2; i++) {
+        for (int j = 0; j <= J / 2; j++) {
+            for (int k = 0; k <= K / 2; k++) {
                 B.insert({i, j, k}, (i + j + k + 1));
             }
         }
@@ -381,11 +432,11 @@ void testMultiplicationNew() {
 void testMultiplicationNewPerf() {
     auto t1 = high_resolution_clock::now();
     SparseMatrix A;
-    int I = 100;
-    int J = 100;
-    int K = 100;
+    int I = 5;
+    int J = 5;
+    int K = 1;
     int stride = 4;
-    int executionTimes = 100;
+    int executionTimes = 1;
     int aSize = 0;
     int bSize = 0;
     std::cout << "Matrix construction started!" << std::endl;
@@ -422,6 +473,27 @@ void testMultiplicationNewPerf() {
     std::cout << "B size = " << bSize << std::endl;
 
     std::cout << "Matrix construction ended!" << std::endl;
+
+
+    
+    std::cout << "GPU Tree Multiplication start!" << std::endl;
+    t1 = high_resolution_clock::now();
+    for (int i = 0; i < executionTimes; i++) {
+        //A.setMultiplicationStrategy(GPU_MULTIPLICATION);
+        SparseMatrix C = A * B;
+        A.setMultiplicationStrategy(TUPLE_ITERATION);
+        SparseMatrix D = A * B;
+        assert(C == D);
+    }
+
+    t2 = high_resolution_clock::now();
+    ms_int = duration_cast<milliseconds>(t2 - t1);
+
+    ms_double = t2 - t1;
+    std::cout << ms_int.count() << "ms\n";
+    std::cout << ms_double.count() << "ms\n";
+    std::cout << "GPU Tree Multiplication ended!" << std::endl;
+
     std::cout << "Tree Multiplication start!" << std::endl;
     t1 = high_resolution_clock::now();
     for (int i = 0; i < executionTimes; i++) {
@@ -472,6 +544,7 @@ void testMultiplicationNewPerf() {
     std::cout << ms_int.count() << "ms\n";
     std::cout << ms_double.count() << "ms\n";
     std::cout << "Old Multiplication ended!" << std::endl;
+
 }
 
 void testMultiplicationPerfMulti() {
