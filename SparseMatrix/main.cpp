@@ -1,0 +1,1655 @@
+#include <assert.h>
+
+#include <chrono>
+#include <iostream>
+
+#include "SparseMatrix/SparseMatrix.h"
+#include "SparseMatrix/Strategies/Multiplication/IndexIntersectionFinder.h"
+
+#include "GPUSparseMatrix.h"
+#include "GPUSparseMatrixIterator.h"
+using namespace std;
+
+using std::chrono::duration;
+using std::chrono::duration_cast;
+using std::chrono::high_resolution_clock;
+using std::chrono::milliseconds;
+
+void testInsert();
+void testDelete();
+void testIterator();
+void testIteratorPerf();
+void assertTupleEquality(const SparseMatrixTuple& t1, const SparseMatrixTuple& t2);
+void testMultiplication();
+void testMultiplicationPerf();
+void testMultiplicationPerfMulti();
+void testMultiplicationNew();
+void testMultiplicationNewPerf();
+void testParallelThreadedMultiplication();
+void testParallelThreadedMultiplicationOneDim();
+void testNoCommonIndicesMultiplication();
+void testMultiplicationGPU();
+void demo();
+void testFoundIndices();
+void testGPUMultiplication();
+
+void testGPUSparseMatrixMultiplication();
+int main() {
+    /*    testInsert();
+        testDelete();
+        testIterator();
+        testIteratorPerf();
+        testMultiplication();
+        testMultiplicationPerfMulti();
+        testMultiplicationNew();
+        testMultiplicationNewPerf();
+        testParallelThreadedMultiplication();
+        testMultiplicationPerf();
+
+        testParallelThreadedMultiplicationOneDim();
+        testNoCommonIndicesMultiplication();
+        testFoundIndices();*/
+    //  demo();
+   // testGPUMultiplication();
+//   testMultiplicationNewPerf();
+//   testMultiplicationGPU();
+
+   //testMultiplicationNewPerf();
+
+   // testGPUMultiplication();
+    testGPUSparseMatrixMultiplication();
+    std::cout << "End of Tests!" << std::endl;
+}
+
+void testGPUSparseMatrixMultiplication() {
+/*    GPUSparseMatrix D;
+    GPUSparseMatrix E;
+
+	D.insert({ 1,2,3 }, 10);
+    E.insert({ 1,2,3 }, 11);
+
+    D.insert({ 0,0,0 }, 12);
+    E.insert({ 0, 0, 0 }, 13);
+
+    GPUSparseMatrix DE = D * E;
+
+    GPUSparseMatrixIterator iterator = DE.iterator();
+    std::vector<SparseMatrixTuple> groundTruth;
+    groundTruth.push_back({ {0, 0, 0}, 12 * 13 });
+    groundTruth.push_back({ {1, 2, 3}, 10 * 11 });
+
+    int k = 0;
+    for (const SparseMatrixTuple& tuple : iterator) {
+        tuple.dump();
+        assertTupleEquality(tuple, groundTruth[k++]);
+    }
+    assert(k == (int)groundTruth.size());
+    */
+
+    int I = 1000;
+    int J = 1000;// 0;
+    int K = 100;// 0;
+    int stride = 3;
+    int executionTimes = 1;
+    {
+        auto t1 = high_resolution_clock::now();
+        GPUSparseMatrix A;
+        
+        int aSize = 0;
+        int bSize = 0;
+        std::cout << "GPU Matrix construction started!" << std::endl;
+
+        // dense
+        for (int i = 0; i < I; i++) {
+            for (int j = 0; j < J; j++) {
+                for (int k = 0; k < K; k++) {
+                    A.insert({ i, j, k }, (i + j + k + 1));
+                    aSize++;
+                }
+            }
+        }
+
+        // sparse
+        GPUSparseMatrix B;
+        std::vector<SparseMatrixTuple> groundTruth;
+
+        for (int i = 0; i < I; i += stride) {
+            for (int j = 0; j < J; j += stride) {
+                for (int k = 0; k < K; k += stride) {
+                    B.insert({ i, j, k }, 2);
+                    groundTruth.push_back({ {i, j, k}, 2.0 * (i + j + k + 1) });
+                    bSize++;
+                }
+            }
+        }
+
+        auto t2 = high_resolution_clock::now();
+        auto ms_int = duration_cast<milliseconds>(t2 - t1);
+
+        duration<double, std::milli> ms_double = t2 - t1;
+        std::cout << "GPU A size = " << aSize << std::endl;
+        std::cout << "GPU B size = " << bSize << std::endl;
+
+        std::cout << "GPU Matrix construction ended!" << std::endl;
+        std::cout << ms_int.count() << "ms\n";
+        std::cout << ms_double.count() << "ms\n";
+
+        std::cout << "GPU Multiplication started!" << std::endl;
+        t1 = high_resolution_clock::now();
+        for (int i = 0; i < executionTimes; i++) {
+            GPUSparseMatrix C = A * B;
+            assert(C.getSize() == aSize);
+
+/*            GPUSparseMatrixIterator iterator = C.iterator();
+            int k = 0;
+            for (const SparseMatrixTuple& tuple : iterator) {
+				tuple.dump();
+                assertTupleEquality(tuple, groundTruth[k++]);
+            }
+            assert(k == (int)groundTruth.size());*/
+        }
+
+        t2 = high_resolution_clock::now();
+        ms_int = duration_cast<milliseconds>(t2 - t1);
+
+        ms_double = t2 - t1;
+        std::cout << ms_int.count() << "ms\n";
+        std::cout << ms_double.count() << "ms\n";
+        std::cout << "GPU Multiplication ended!" << std::endl;
+        std::cout << "Test completed, Matrices are equal!" << std::endl;
+    }
+    {
+        std::cout << "Matrix construction started!" << std::endl;
+        auto t1 = high_resolution_clock::now();
+        int bSize = 0;
+        int aSize = 0;
+
+        SparseMatrix A;
+        for (int i = 0; i < I; i++) {
+            for (int j = 0; j < J; j++) {
+                for (int k = 0; k < K; k++) {
+                    A.insert({ i, j, k }, (i + j + k + 1));
+                    aSize++;
+                }
+            }
+        }
+
+        // sparse
+        SparseMatrix B;
+        std::vector<SparseMatrixTuple> groundTruth;
+
+        for (int i = 0; i < I; i += stride) {
+            for (int j = 0; j < J; j += stride) {
+                for (int k = 0; k < K; k += stride) {
+                    B.insert({ i, j, k }, 2);
+                    groundTruth.push_back({ {i, j, k}, 2.0 * (i + j + k + 1) });
+                    bSize++;
+                }
+            }
+        }
+
+        auto t2 = high_resolution_clock::now();
+        auto ms_int = duration_cast<milliseconds>(t2 - t1);
+        duration<double, std::milli> ms_double = t2 - t1;
+
+        std::cout << "A size = " << aSize << std::endl;
+        std::cout << "B size = " << bSize << std::endl;
+        std::cout << "Matrix construction ended!" << std::endl;
+        std::cout << ms_int.count() << "ms\n";
+        std::cout << ms_double.count() << "ms\n";
+
+        std::cout << "Multiplication started!" << std::endl;
+        t1 = high_resolution_clock::now();
+        A.setMultiplicationStrategy(TUPLE_ITERATION);
+
+        for (int i = 0; i < executionTimes; i++) {
+            SparseMatrix C = A * B;
+            assert(C.size() == aSize);
+
+/*            SparseMatrixIterator iterator = C.iterator();
+            int k = 0;
+            for (const SparseMatrixTuple& tuple : iterator) {
+                tuple.dump();
+                assertTupleEquality(tuple, groundTruth[k++]);
+            }
+            assert(k == (int)groundTruth.size());*/
+        }
+        t2 = high_resolution_clock::now();
+        ms_int = duration_cast<milliseconds>(t2 - t1);
+
+        ms_double = t2 - t1;
+        std::cout << ms_int.count() << "ms\n";
+        std::cout << ms_double.count() << "ms\n";
+        std::cout << "Multiplication ended!" << std::endl;
+        std::cout << "Test completed, Matrices are equal!" << std::endl;
+    }
+}
+
+void testGPUMultiplication() {
+    /*    int I = 100, J = 100, K = 100;
+        SparseMatrix A, B, C;
+        for (int i = I / 2; i < I; i++) {
+            for (int j = J / 2; j < J; j++) {
+                for (int k = K / 2; k < K; k++) {
+                    A.insert({i, j, k}, (i + j + k + 1));
+                }
+            }
+        }
+        for (int i = 0; i <= I / 2; i++) {
+            for (int j = 0; j <= J / 2; j++) {
+                for (int k = 0; k <= K / 2; k++) {
+                    B.insert({i, j, k}, (i + j + k + 1));
+                }
+            }
+        }*/
+    SparseMatrix A;
+    A.insert({12, 1, 1}, 10);
+    A.insert({11, 1, 1}, 2);
+    A.insert({13, 1, 1}, 3);
+    A.insert({1000, 1, 1}, 4);
+    A.insert({4, 1, 1}, 5);
+
+    A.insert({1, 1, 1}, 6);
+    A.insert({1, 1, 2}, 7);
+    A.insert({1, 2, 1}, 8);
+    A.insert({50, 2, 1}, 9);
+    A.insert({ 50, 2, 60 }, 41);
+
+    SparseMatrix B;
+    B.insert({1, 1, 1}, 11);
+    B.insert({1, 1, 20}, 2);
+    B.insert({1, 20, 1}, 3);
+    B.insert({50, 2, 1}, 4);
+
+    B.insert({ 50, 2, 50 }, 41);
+
+    SparseMatrix D = A * B;
+
+    A.setMultiplicationStrategy(GPU_MULTIPLICATION);
+    SparseMatrix C = A * B;
+    assert(C.size() == 2);
+    SparseMatrixIterator iterator = C.iterator();
+
+    int i = 0;
+    std::vector<SparseMatrixTuple> groundTruth;
+    groundTruth.push_back({{1, 1, 1}, 6});
+    groundTruth.push_back({{50, 2, 1}, 36});
+
+    for (const SparseMatrixTuple& tuple : iterator) {
+        assertTupleEquality(tuple, groundTruth[i++]);
+    }
+}
+
+void testFoundIndices() {
+    FlatIndex info;
+    int startI = 0;
+    int endI = 10000000;
+    int elem = 0;
+    int stride = 1;
+    for (int i = startI; i < endI; i += stride) {
+        info.leftIndexPos.push_back(elem);
+        info.leftIndices.push_back(i);
+        elem++;
+    }
+
+    int startJ = endI / 2;
+    int endJ = (endI / 2) + 1005;
+    elem = 0;
+    for (int i = startJ; i < endJ; i++) {
+        info.rightIndexPos.push_back(elem);
+        info.rightIndices.push_back(i);
+        elem++;
+    }
+
+    info.maxSize = (int) (info.leftIndexPos.size() > info.rightIndexPos.size() ? info.leftIndexPos.size()
+                                                                        : info.rightIndexPos.size() );
+    info.maxOffsetLeft = (int)info.leftIndexPos.size();
+    info.maxOffsetRight = (int)info.rightIndexPos.size();
+
+    IndexIntersectionFinder finder;
+    auto t1 = high_resolution_clock::now();
+    std::vector<CommonOffset> offsets = finder.find(info);
+    auto t2 = high_resolution_clock::now();
+    auto ms_int = duration_cast<milliseconds>(t2 - t1);
+
+    duration<double, std::milli> ms_double = t2 - t1;
+    std::cout << "Found = " << offsets.size() << " offsets" << std::endl;
+    std::cout << ms_int.count() << "ms\n";
+    std::cout << ms_double.count() << "ms\n";
+    std::cout << "Matrix construction ended!" << std::endl;
+    /*    FlatIndex info;
+        info.leftIndexPos = {0,1,2,3,4,5,6};
+        info.leftIndices = {1,2,3,7,8,10,15};
+
+        info.rightIndexPos = {0,1,2,3,4,5,6,7,8,9};
+        info.rightIndices = {0,8,15,16,17,18,19,20,21,22};
+
+        info.maxSize = 7;
+        info.maxOffsetLeft = info.leftIndexPos.size();
+        info.maxOffsetRight = info.rightIndexPos.size();
+
+       IndexIntersectionFinder finder;
+       std::vector<CommonOffset> offsets = finder.find(info);
+       assert(offsets[0].tupleKey == 8);
+       assert(offsets[1].tupleKey == 15);*/
+}
+
+void demo() {
+    int I = 100, J = 100, K = 100;
+    SparseMatrix A, B, C;
+    for (int i = I / 2; i < I; i++) {
+        for (int j = J / 2; j < J; j++) {
+            for (int k = K / 2; k < K; k++) {
+                A.insert({i, j, k}, (i + j + k + 1));
+            }
+        }
+    }
+    for (int i = 0; i <= I / 2; i++) {
+        for (int j = 0; j <= J / 2; j++) {
+            for (int k = 0; k <= K / 2; k++) {
+                B.insert({i, j, k}, (i + j + k + 1));
+            }
+        }
+    }
+    C = A * B;
+    assert(C.size() == 1);
+}
+
+void testNoCommonIndicesMultiplication() {
+    auto t1 = high_resolution_clock::now();
+    SparseMatrix A;
+    int I = 100;
+    int J = 100;
+    int K = 100;
+    int stride = 1;
+    int executionTimes = 100;
+    int aSize = 0;
+    int bSize = 0;
+    std::cout << "Matrix construction started!" << std::endl;
+
+    // dense
+    for (int i = I / 2; i < I; i++) {
+        for (int j = J / 2; j < J; j++) {
+            for (int k = K / 2; k < K; k++) {
+                A.insert({i, j, k}, (i + j + k + 1));
+                aSize++;
+            }
+        }
+    }
+
+    // sparse
+    SparseMatrix B;
+    std::vector<SparseMatrixTuple> groundTruth;
+
+    for (int i = 0; i < I / 2; i += stride) {
+        for (int j = 0; j < J / 2; j += stride) {
+            for (int k = 0; k < K / 2; k += stride) {
+                B.insert({i, j, k}, 2);
+                groundTruth.push_back({{i, j, k}, 2.0 * (i + j + k + 1)});
+                bSize++;
+            }
+        }
+    }
+
+    auto t2 = high_resolution_clock::now();
+    auto ms_int = duration_cast<milliseconds>(t2 - t1);
+
+    duration<double, std::milli> ms_double = t2 - t1;
+    std::cout << "A size = " << aSize << std::endl;
+    std::cout << "B size = " << bSize << std::endl;
+
+    std::cout << "Matrix construction ended!" << std::endl;
+
+    t1 = high_resolution_clock::now();
+    for (int i = 0; i < executionTimes; i++) {
+        SparseMatrix C = A * B;
+        assert(C.size() == 0);
+    }
+    t2 = high_resolution_clock::now();
+    ms_int = duration_cast<milliseconds>(t2 - t1);
+
+    ms_double = t2 - t1;
+    std::cout << ms_int.count() << "ms\n";
+    std::cout << ms_double.count() << "ms\n";
+    std::cout << "Test completed, Matrices are equal!" << std::endl;
+
+    t1 = high_resolution_clock::now();
+    A.setMultiplicationStrategy(BLINDLY_THREADED_TREE);
+    for (int i = 0; i < executionTimes; i++) {
+        SparseMatrix C = A * B;
+        assert(C.size() == 0);
+    }
+    t2 = high_resolution_clock::now();
+    ms_int = duration_cast<milliseconds>(t2 - t1);
+
+    ms_double = t2 - t1;
+    std::cout << ms_int.count() << "ms\n";
+    std::cout << ms_double.count() << "ms\n";
+    std::cout << "Test completed, Matrices are equal!" << std::endl;
+}
+
+void testParallelThreadedMultiplicationOneDim() {
+    auto t1 = high_resolution_clock::now();
+    SparseMatrix A;
+    int I = 100000;
+    int stride = 4;
+    int executionTimes = 1;
+    int aSize = 0;
+    int bSize = 0;
+    std::cout << "Matrix construction started!" << std::endl;
+
+    // dense
+    for (int i = 0; i < I; i++) {
+        A.insert({i}, (i + 1));
+        aSize++;
+    }
+
+    // sparse
+    SparseMatrix B;
+    std::vector<SparseMatrixTuple> groundTruth;
+
+    for (int i = 0; i < I; i += stride) {
+        B.insert({i}, 2);
+        groundTruth.push_back({{i}, 2.0 * (i + 1)});
+        bSize++;
+    }
+
+    auto t2 = high_resolution_clock::now();
+    auto ms_int = duration_cast<milliseconds>(t2 - t1);
+
+    duration<double, std::milli> ms_double = t2 - t1;
+    std::cout << "A size = " << aSize << std::endl;
+    std::cout << "B size = " << bSize << std::endl;
+
+    std::cout << "Matrix construction ended!" << std::endl;
+
+    t1 = high_resolution_clock::now();
+    for (int i = 0; i < executionTimes; i++) {
+        SparseMatrix C = A * B;
+        A.setMultiplicationStrategy(TUPLE_ITERATION);
+        SparseMatrix D = A * B;
+        assert(C == D);
+        A.setMultiplicationStrategy(OFFSET_TREE);
+        SparseMatrix E = A * B;
+        assert(E == D);
+        A.setMultiplicationStrategy(BLINDLY_THREADED_TREE);
+        SparseMatrix Z = A * B;
+        assert(Z == D);
+        assert(D.size() == bSize && Z.size() == bSize);
+    }
+    t2 = high_resolution_clock::now();
+    ms_int = duration_cast<milliseconds>(t2 - t1);
+
+    ms_double = t2 - t1;
+    std::cout << ms_int.count() << "ms\n";
+    std::cout << ms_double.count() << "ms\n";
+    std::cout << "Test completed, Matrices are equal!" << std::endl;
+}
+
+void testParallelThreadedMultiplication() {
+    auto t1 = high_resolution_clock::now();
+    SparseMatrix A;
+    int I = 100;
+    int J = 100;
+    int K = 100;
+    int stride = 2;
+    int executionTimes = 100;
+    int aSize = 0;
+    int bSize = 0;
+    std::cout << "Matrix construction started!" << std::endl;
+
+    // dense
+    for (int i = 0; i < I; i++) {
+        for (int j = 0; j < J; j++) {
+            for (int k = 0; k < K; k++) {
+                A.insert({i, j, k}, (i + j + k + 1));
+                aSize++;
+            }
+        }
+    }
+
+    // sparse
+    SparseMatrix B;
+    std::vector<SparseMatrixTuple> groundTruth;
+
+    for (int i = 0; i < I; i += stride) {
+        for (int j = 0; j < J; j += stride) {
+            for (int k = 0; k < K; k += stride) {
+                B.insert({i, j, k}, 2);
+                groundTruth.push_back({{i, j, k}, 2.0 * (i + j + k + 1)});
+                bSize++;
+            }
+        }
+    }
+
+    auto t2 = high_resolution_clock::now();
+    auto ms_int = duration_cast<milliseconds>(t2 - t1);
+
+    duration<double, std::milli> ms_double = t2 - t1;
+    std::cout << "A size = " << aSize << std::endl;
+    std::cout << "B size = " << bSize << std::endl;
+
+    std::cout << "Matrix construction ended!" << std::endl;
+
+    t1 = high_resolution_clock::now();
+    for (int i = 0; i < executionTimes; i++) {
+        A.setMultiplicationStrategy(BLINDLY_THREADED_TREE);
+        SparseMatrix C = A * B;
+        A.setMultiplicationStrategy(TUPLE_ITERATION);
+        SparseMatrix D = A * B;
+        assert(C == D);
+    }
+    t2 = high_resolution_clock::now();
+    ms_int = duration_cast<milliseconds>(t2 - t1);
+
+    ms_double = t2 - t1;
+    std::cout << ms_int.count() << "ms\n";
+    std::cout << ms_double.count() << "ms\n";
+    std::cout << "Test completed, Matrices are equal!" << std::endl;
+}
+
+void testMultiplicationNew() {
+    auto t1 = high_resolution_clock::now();
+    SparseMatrix A;
+    int I = 100;
+    int J = 100;
+    int K = 100;
+    int stride = 2;
+    int executionTimes = 100;
+    int aSize = 0;
+    int bSize = 0;
+    std::cout << "Matrix construction started!" << std::endl;
+
+    // dense
+    for (int i = 0; i < I; i++) {
+        for (int j = 0; j < J; j++) {
+            for (int k = 0; k < K; k++) {
+                A.insert({i, j, k}, (i + j + k + 1));
+                aSize++;
+            }
+        }
+    }
+
+    // sparse
+    SparseMatrix B;
+    std::vector<SparseMatrixTuple> groundTruth;
+
+    for (int i = 0; i < I; i += stride) {
+        for (int j = 0; j < J; j += stride) {
+            for (int k = 0; k < K; k += stride) {
+                B.insert({i, j, k}, 2);
+                groundTruth.push_back({{i, j, k}, 2.0 * (i + j + k + 1)});
+                bSize++;
+            }
+        }
+    }
+
+    auto t2 = high_resolution_clock::now();
+    auto ms_int = duration_cast<milliseconds>(t2 - t1);
+
+    duration<double, std::milli> ms_double = t2 - t1;
+    std::cout << "A size = " << aSize << std::endl;
+    std::cout << "B size = " << bSize << std::endl;
+
+    std::cout << "Matrix construction ended!" << std::endl;
+
+    t1 = high_resolution_clock::now();
+    for (int i = 0; i < executionTimes; i++) {
+        A.setMultiplicationStrategy(OFFSET_TREE);
+        SparseMatrix C = A * B;
+        A.setMultiplicationStrategy(TUPLE_ITERATION);
+        SparseMatrix D = A * B;
+        // std::cout << A.size() << " " << B.size() << std::endl;
+        assert(C == D);
+    }
+    t2 = high_resolution_clock::now();
+    ms_int = duration_cast<milliseconds>(t2 - t1);
+
+    ms_double = t2 - t1;
+    std::cout << ms_int.count() << "ms\n";
+    std::cout << ms_double.count() << "ms\n";
+    std::cout << "Test completed, Matrices are equal!" << std::endl;
+}
+
+void testMultiplicationNewPerf() {
+    auto t1 = high_resolution_clock::now();
+    SparseMatrix A;
+    int I = 1000;// 000;
+    int J = 100;// 00;
+    int K = 10;
+    int stride = 1;
+    int executionTimes = 1;
+    int aSize = 0;
+    int bSize = 0;
+    std::cout << "Matrix construction started!" << std::endl;
+
+    // dense
+    for (int i = 0; i < I; i++) {
+        for (int j = 0; j < J; j++) {
+            for (int k = 0; k < K; k++) {
+                A.insert({i, j, k}, (i + j + k + 1));
+                aSize++;
+            }
+        }
+    }
+
+    // sparse
+    SparseMatrix B;
+    std::vector<SparseMatrixTuple> groundTruth;
+
+    for (int i = 0; i < I; i += stride) {
+        for (int j = 0; j < J; j += stride) {
+            for (int k = 0; k < K; k += stride) {
+                B.insert({i, j, k}, 2);
+                groundTruth.push_back({{i, j, k}, 2.0 * (i + j + k + 1)});
+                bSize++;
+            }
+        }
+    }
+
+    auto t2 = high_resolution_clock::now();
+    auto ms_int = duration_cast<milliseconds>(t2 - t1);
+
+    duration<double, std::milli> ms_double = t2 - t1;
+    std::cout << "A size = " << aSize << std::endl;
+    std::cout << "B size = " << bSize << std::endl;
+
+    std::cout << "Matrix construction ended!" << std::endl;
+    
+    std::cout << "GPU Tree Multiplication start!" << std::endl;
+    t1 = high_resolution_clock::now();
+    for (int i = 0; i < executionTimes; i++) {
+        A.setMultiplicationStrategy(GPU_MULTIPLICATION);
+        SparseMatrix C = A * B;
+/*     A.setMultiplicationStrategy(TUPLE_ITERATION);
+        SparseMatrix D = A * B;
+        assert(C == D);*/
+    }
+
+    t2 = high_resolution_clock::now();
+    ms_int = duration_cast<milliseconds>(t2 - t1);
+
+    ms_double = t2 - t1;
+    std::cout << ms_int.count() << "ms\n";
+    std::cout << ms_double.count() << "ms\n";
+    std::cout << "GPU Tree Multiplication ended!" << std::endl;
+
+    std::cout << "Tree Multiplication start!" << std::endl;
+    t1 = high_resolution_clock::now();
+    for (int i = 0; i < executionTimes; i++) {
+      //  A.setMultiplicationStrategy(BLINDLY_THREADED_TREE);
+       // SparseMatrix C = A * B;
+/*        A.setMultiplicationStrategy(TUPLE_ITERATION);
+        SparseMatrix D = A * B;
+        assert(C == D);*/
+    }
+    t2 = high_resolution_clock::now();
+    ms_int = duration_cast<milliseconds>(t2 - t1);
+
+    ms_double = t2 - t1;
+    std::cout << ms_int.count() << "ms\n";
+    std::cout << ms_double.count() << "ms\n";
+    std::cout << "Tree Multiplication ended!" << std::endl;
+
+    std::cout << "Ranged Tree Multiplication start!" << std::endl;
+    t1 = high_resolution_clock::now();
+    for (int i = 0; i < executionTimes; i++) {
+        A.setMultiplicationStrategy(RANGED_TREE_THREADED);
+      //  SparseMatrix C = A * B;
+     /*   A.setMultiplicationStrategy(TUPLE_ITERATION);
+        SparseMatrix D = A * B;
+        assert(C == D);*/
+    }
+
+    t2 = high_resolution_clock::now();
+    ms_int = duration_cast<milliseconds>(t2 - t1);
+
+    ms_double = t2 - t1;
+    std::cout << ms_int.count() << "ms\n";
+    std::cout << ms_double.count() << "ms\n";
+    std::cout << "Ranged Tree Multiplication ended!" << std::endl;
+    std::cout << "Old Multiplication started!" << std::endl;
+
+    t1 = high_resolution_clock::now();
+    A.setMultiplicationStrategy(TUPLE_ITERATION);
+
+    for (int i = 0; i < executionTimes; i++) {
+        SparseMatrix D = A * B;
+    }
+
+    t2 = high_resolution_clock::now();
+    ms_int = duration_cast<milliseconds>(t2 - t1);
+
+    ms_double = t2 - t1;
+    std::cout << ms_int.count() << "ms\n";
+    std::cout << ms_double.count() << "ms\n";
+    std::cout << "Old Multiplication ended!" << std::endl;
+
+}
+
+void testMultiplicationPerfMulti() {
+    auto t1 = high_resolution_clock::now();
+    SparseMatrix A;
+    int I = 100;
+    int J = 100;
+    int K = 100;
+    int stride = 15;
+    int executionTimes = 2;
+    int aSize = 0;
+    int bSize = 0;
+    std::cout << "Matrix construction started!" << std::endl;
+
+    // dense
+    for (int i = 0; i < I; i++) {
+        for (int j = 0; j < J; j++) {
+            for (int k = 0; k < K; k++) {
+                A.insert({i, j, k}, (i + j + k + 1));
+                aSize++;
+            }
+        }
+    }
+
+    // sparse
+    SparseMatrix B;
+    std::vector<SparseMatrixTuple> groundTruth;
+
+    for (int i = 0; i < I; i += stride) {
+        for (int j = 0; j < J; j += stride) {
+            for (int k = 0; k < K; k += stride) {
+                B.insert({i, j, k}, 2);
+                groundTruth.push_back({{i, j, k}, 2.0 * (i + j + k + 1)});
+                bSize++;
+            }
+        }
+    }
+
+    auto t2 = high_resolution_clock::now();
+    auto ms_int = duration_cast<milliseconds>(t2 - t1);
+
+    duration<double, std::milli> ms_double = t2 - t1;
+    std::cout << "A size = " << aSize << std::endl;
+    std::cout << "B size = " << bSize << std::endl;
+
+    std::cout << "Matrix construction ended!" << std::endl;
+
+    t1 = high_resolution_clock::now();
+    B.setMultiplicationStrategy(TUPLE_ITERATION);
+    for (int i = 0; i < executionTimes; i++) {
+        SparseMatrix C = B * A;
+    }
+    t2 = high_resolution_clock::now();
+    ms_int = duration_cast<milliseconds>(t2 - t1);
+
+    ms_double = t2 - t1;
+    std::cout << ms_int.count() << "ms\n";
+    std::cout << ms_double.count() << "ms\n";
+    std::cout << "New Multiplication ended!" << std::endl;
+
+    t1 = high_resolution_clock::now();
+    B.setMultiplicationStrategy(LATE_COMPARISON);
+
+    for (int i = 0; i < executionTimes; i++) {
+        SparseMatrix C = B * A;  //.oldMultiplication(A);
+    }
+    t2 = high_resolution_clock::now();
+    ms_int = duration_cast<milliseconds>(t2 - t1);
+
+    ms_double = t2 - t1;
+    std::cout << ms_int.count() << "ms\n";
+    std::cout << ms_double.count() << "ms\n";
+    std::cout << "New Multiplication ended!" << std::endl;
+}
+
+void testMultiplicationPerf() {
+    auto t1 = high_resolution_clock::now();
+    SparseMatrix A;
+    int I = 100;
+    int J = 100;
+    int K = 100;
+    int stride = 8;
+
+    int aSize = 0;
+    int bSize = 0;
+    std::cout << "Matrix construction started!" << std::endl;
+
+    // dense
+    for (int i = 0; i < I; i++) {
+        for (int j = 0; j < J; j++) {
+            for (int k = 0; k < K; k++) {
+                A.insert({i, j, k}, (i + j + k + 1));
+                aSize++;
+            }
+        }
+    }
+
+    // sparse
+    SparseMatrix B;
+    std::vector<SparseMatrixTuple> groundTruth;
+
+    for (int i = 0; i < I; i += stride) {
+        for (int j = 0; j < J; j += stride) {
+            for (int k = 0; k < K; k += stride) {
+                B.insert({i, j, k}, 2);
+                groundTruth.push_back({{i, j, k}, 2.0 * (i + j + k + 1)});
+                bSize++;
+            }
+        }
+    }
+
+    auto t2 = high_resolution_clock::now();
+    auto ms_int = duration_cast<milliseconds>(t2 - t1);
+
+    duration<double, std::milli> ms_double = t2 - t1;
+    std::cout << "A size = " << aSize << std::endl;
+    std::cout << "B size = " << bSize << std::endl;
+
+    std::cout << "Matrix construction ended!" << std::endl;
+    std::cout << ms_int.count() << "ms\n";
+    std::cout << ms_double.count() << "ms\n";
+
+    std::cout << "Multiplication started!" << std::endl;
+    t1 = high_resolution_clock::now();
+    {
+        SparseMatrix C = A * B;
+
+        t2 = high_resolution_clock::now();
+        ms_int = duration_cast<milliseconds>(t2 - t1);
+
+        ms_double = t2 - t1;
+
+        SparseMatrixIterator iterator = C.iterator();
+        int i = 0;
+        for (const SparseMatrixTuple& tuple : iterator) {
+            assertTupleEquality(tuple, groundTruth[i++]);
+        }
+        assert(i == (int)groundTruth.size());
+        std::cout << ms_int.count() << "ms\n";
+        std::cout << ms_double.count() << "ms\n";
+        std::cout << "Multiplication ended!" << std::endl;
+    }
+    {
+        std::cout << "OLD Multiplication started!" << std::endl;
+        t1 = high_resolution_clock::now();
+
+        A.setMultiplicationStrategy(LATE_COMPARISON);
+        SparseMatrix OC = A * B;  // A.oldMultiplication(B);
+
+        t2 = high_resolution_clock::now();
+        ms_int = duration_cast<milliseconds>(t2 - t1);
+
+        ms_double = t2 - t1;
+
+        SparseMatrixIterator iteratorD = OC.iterator();
+        int i = 0;
+        for (const SparseMatrixTuple& tuple : iteratorD) {
+            assertTupleEquality(tuple, groundTruth[i++]);
+        }
+        assert(i == (int)groundTruth.size());
+        std::cout << ms_int.count() << "ms\n";
+        std::cout << ms_double.count() << "ms\n";
+        std::cout << "OLD Multiplication ended!" << std::endl;
+    }
+
+    {
+        std::cout << "Blindly Threaded Multiplication started!" << std::endl;
+        t1 = high_resolution_clock::now();
+
+        A.setMultiplicationStrategy(BLINDLY_THREADED_TREE);
+        SparseMatrix OC = A * B;
+
+        t2 = high_resolution_clock::now();
+        ms_int = duration_cast<milliseconds>(t2 - t1);
+
+        ms_double = t2 - t1;
+
+        SparseMatrixIterator iteratorD = OC.iterator();
+        int i = 0;
+        for (const SparseMatrixTuple& tuple : iteratorD) {
+            assertTupleEquality(tuple, groundTruth[i++]);
+        }
+        assert(i == (int)groundTruth.size());
+        std::cout << ms_int.count() << "ms\n";
+        std::cout << ms_double.count() << "ms\n";
+        std::cout << "Blindly Threaded Multiplication ended!" << std::endl;
+    }
+    {
+        std::cout << "Ranged Multiplication started!" << std::endl;
+        t1 = high_resolution_clock::now();
+
+        A.setMultiplicationStrategy(RANGED_TREE_THREADED);
+        SparseMatrix OC = A * B;
+
+        t2 = high_resolution_clock::now();
+        ms_int = duration_cast<milliseconds>(t2 - t1);
+
+        ms_double = t2 - t1;
+
+        SparseMatrixIterator iteratorD = OC.iterator();
+        int i = 0;
+        for (const SparseMatrixTuple& tuple : iteratorD) {
+            assertTupleEquality(tuple, groundTruth[i++]);
+        }
+        assert(i == (int)groundTruth.size());
+        std::cout << ms_int.count() << "ms\n";
+        std::cout << ms_double.count() << "ms\n";
+        std::cout << "Ranged Multiplication ended!" << std::endl;
+    }
+
+    {
+        std::cout << "New Multiplication started!" << std::endl;
+        t1 = high_resolution_clock::now();
+
+        A.setMultiplicationStrategy(OFFSET_TREE);
+        SparseMatrix OC = A * B;
+
+        t2 = high_resolution_clock::now();
+        ms_int = duration_cast<milliseconds>(t2 - t1);
+
+        ms_double = t2 - t1;
+
+        SparseMatrixIterator iteratorD = OC.iterator();
+        int i = 0;
+        for (const SparseMatrixTuple& tuple : iteratorD) {
+            assertTupleEquality(tuple, groundTruth[i++]);
+        }
+        std::cout << i << std::endl;
+        assert(i == (int)groundTruth.size());
+        std::cout << ms_int.count() << "ms\n";
+        std::cout << ms_double.count() << "ms\n";
+        std::cout << "New Multiplication ended!" << std::endl;
+    }
+}
+
+void testMultiplicationGPU() {
+    SparseMatrix A;
+    A.insert({ 1, 1, 1 }, 2);
+    A.insert({ 1, 2, 1 }, 5);
+
+    A.insert({1, 1, 2}, 3);
+    
+    SparseMatrix B;
+    B.insert({ 1, 1, 1 }, 2);
+    B.insert({ 1, 2, 1 }, 5);
+
+    B.insert({1, 1, 20}, 3);
+    B.insert({ 1, 20, 1 }, 4);
+    
+	A.setMultiplicationStrategy(GPU_MULTIPLICATION);
+    SparseMatrix C = A * B;
+    SparseMatrixIterator iterator = C.iterator();
+
+    std::vector<SparseMatrixTuple> groundTruth;
+    groundTruth.push_back({ {1, 1, 1}, 4 });
+    groundTruth.push_back({ {1, 2, 1}, 25 });
+    int i = 0;
+    for (const SparseMatrixTuple& tuple : iterator) {
+        std::cout << "{" << tuple.tuple[0] << "," << tuple.tuple[1] << "," << tuple.tuple[2]
+            << "} := " << tuple.value << std::endl;
+        assertTupleEquality(tuple, groundTruth[i++]);
+    }
+    std::cout << i << std::endl;
+    assert(i == (int)groundTruth.size());
+}
+
+
+void testMultiplication() {
+    SparseMatrix A;
+    A.insert({1, 1, 1}, 2);
+    A.insert({1, 1, 2}, 3);
+    A.insert({1, 2, 1}, 4);
+    A.insert({50, 2, 1}, 5);
+
+    SparseMatrix B;
+    B.insert({1, 1, 1}, 2);
+    B.insert({1, 1, 20}, 3);
+    B.insert({1, 20, 1}, 4);
+    B.insert({50, 2, 1}, 5);
+
+    SparseMatrix C = A * B;
+    SparseMatrixIterator iterator = C.iterator();
+
+    std::vector<SparseMatrixTuple> groundTruth;
+    groundTruth.push_back({{1, 1, 1}, 4});
+    groundTruth.push_back({{50, 2, 1}, 25});
+    int i = 0;
+    for (const SparseMatrixTuple& tuple : iterator) {
+        std::cout << "{" << tuple.tuple[0] << "," << tuple.tuple[1] << "," << tuple.tuple[2]
+                  << "} := " << tuple.value << std::endl;
+        assertTupleEquality(tuple, groundTruth[i++]);
+    }
+    std::cout << i << std::endl;
+    assert(i == (int)groundTruth.size());
+}
+
+void testIterator() {
+    SparseMatrix A;
+    A.insert({10, 5, 2}, 4);
+    A.insert({10, 5, 3}, 5);
+    A.insert({10, 5, 4}, 6);
+    A.insert({10, 5, 5}, 7);
+    A.insert({10, 5, 6}, 8);
+
+    A.insert({1, 1, 10}, 2);
+    A.insert({1, 2, 3}, 3);
+    A.insert({1, 1, 1}, 1);
+    A.insert({10, 6, 1}, 9);
+    A.insert({1, 3, 1}, 10);
+
+    std::vector<SparseMatrixTuple> groundTruth;
+    groundTruth.push_back({{1, 1, 1}, 1});
+    groundTruth.push_back({{1, 1, 10}, 2});
+    groundTruth.push_back({{1, 2, 3}, 3});
+    groundTruth.push_back({{1, 3, 1}, 10});
+    groundTruth.push_back({{10, 5, 2}, 4});
+    groundTruth.push_back({{10, 5, 3}, 5});
+    groundTruth.push_back({{10, 5, 4}, 6});
+    groundTruth.push_back({{10, 5, 5}, 7});
+    groundTruth.push_back({{10, 5, 6}, 8});
+    groundTruth.push_back({{10, 6, 1}, 9});
+
+    SparseMatrixIterator iterator = A.iterator();
+    int i = 0;
+    for (const SparseMatrixTuple& tuple : iterator) {
+        std::cout << "{" << tuple.tuple[0] << "," << tuple.tuple[1] << "," << tuple.tuple[2]
+                  << "} := " << tuple.value << std::endl;
+        assertTupleEquality(tuple, groundTruth[i++]);
+    }
+    assert(i == (int)groundTruth.size());
+}
+
+void assertTupleEquality(const SparseMatrixTuple& t1, const SparseMatrixTuple& t2) {
+    int sz = (int)t2.tuple.size();
+
+    assert((int)t1.tuple.size() == sz);
+    assert(t1.value == t2.value);
+    for (int i = 0; i < sz; i++) {
+        assert(t1.tuple[i] == t2.tuple[i]);
+    }
+}
+
+void testIteratorPerf() {
+    auto t1 = high_resolution_clock::now();
+    int items = 0;
+    SparseMatrix A;
+    int I = 100;
+    int J = 100;
+    int K = 100;
+    for (int i = 0; i < I; i++) {
+        for (int j = 0; j < J; j++) {
+            for (int k = 0; k < K; k++) {
+                A.insert({i, j, k}, i);
+                items++;
+            }
+        }
+    }
+    auto t2 = high_resolution_clock::now();
+    auto ms_int = duration_cast<milliseconds>(t2 - t1);
+
+    duration<double, std::milli> ms_double = t2 - t1;
+    std::cout << ms_int.count() << "ms\n";
+    std::cout << ms_double.count() << "ms\n";
+    std::cout << "Inserted " << items << " items." << std::endl;
+
+    t1 = high_resolution_clock::now();
+    SparseMatrixIterator iterator = A.iterator();
+    int i = 0;
+    for (const SparseMatrixTuple& tuple : iterator) {
+        // std::cout << "{" << tuple.tuple[0] << "," << tuple.tuple[1] << "," <<
+        // tuple.tuple[2] << "} := " << tuple.value << std::endl;
+    }
+    t2 = high_resolution_clock::now();
+    ms_int = duration_cast<milliseconds>(t2 - t1);
+
+    ms_double = t2 - t1;
+    std::cout << "Iterated in " << ms_int.count() << "ms\n";
+    std::cout << "Iterated in " << ms_double.count() << "ms\n";
+    std::cout << "Inserted " << items << " items." << std::endl;
+}
+
+void testDelete() {
+    SparseMatrix A;
+    A.insert({1, 1, 1}, 2);
+    assert(A.size() == 1);
+    assert(A.insert({1, 1, 1}, 0) == true);
+
+    SparseMatrix B;
+    B.insert({1, 5, 6}, 11);
+    B.insert({6, 5, 6}, 13);
+    B.insert({4, 5, 6}, 133);
+    B.insert({5, 5, 6}, 143);
+    B.insert({0, 5, 6}, 155);
+
+    assert(B.size() == 5);
+
+    // delete unique tuple that first index is the highest
+    assert(B.erase({6, 5, 6}));
+
+    B.assertFlatChildrenValues({{0, 10},
+                                {1, 1},
+                                {4, 4},
+                                {5, 7},
+                                {5, 2},
+                                {6, 3},
+                                {5, 5},
+                                {6, 6},
+                                {5, 8},
+                                {6, 9},
+                                {5, 11},
+                                {6, 12}});
+    B.assertFlatNodeValues({{0, 4, 0, 0},
+                            {4, 1, 0, 0},
+                            {5, 1, 0, 0},
+                            {-1, 0, 1, 11},
+                            {6, 1, 0, 0},
+                            {7, 1, 0, 0},
+                            {-1, 0, 1, 133},
+                            {8, 1, 0, 0},
+                            {9, 1, 0, 0},
+                            {-1, 0, 1, 143},
+                            {10, 1, 0, 0},
+                            {11, 1, 0, 0},
+                            {-1, 0, 1, 155}});
+    assert(B.size() == 4);
+
+    assert(B.erase({0, 5, 6}));
+    assert(B.size() == 3);
+
+    B.assertFlatChildrenValues(
+        {{1, 1}, {4, 4}, {5, 7}, {5, 2}, {6, 3}, {5, 5}, {6, 6}, {5, 8}, {6, 9}});
+    B.assertFlatNodeValues({{0, 3, 0, 0},
+                            {3, 1, 0, 0},
+                            {4, 1, 0, 0},
+                            {-1, 0, 1, 11},
+                            {5, 1, 0, 0},
+                            {6, 1, 0, 0},
+                            {-1, 0, 1, 133},
+                            {7, 1, 0, 0},
+                            {8, 1, 0, 0},
+                            {-1, 0, 1, 143}});
+
+    assert(B.erase({4, 5, 6}));
+    assert(B.size() == 2);
+
+    B.assertFlatChildrenValues({{1, 1}, {5, 4}, {5, 2}, {6, 3}, {5, 5}, {6, 6}});
+    B.assertFlatNodeValues({{0, 2, 0, 0},
+                            {2, 1, 0, 0},
+                            {3, 1, 0, 0},
+                            {-1, 0, 1, 11},
+                            {4, 1, 0, 0},
+                            {5, 1, 0, 0},
+                            {-1, 0, 1, 143}});
+
+    assert(B.erase({5, 5, 6}));
+    assert(B.size() == 1);
+
+    B.assertFlatChildrenValues({{1, 1}, {5, 2}, {6, 3}});
+    B.assertFlatNodeValues({{0, 1, 0, 0}, {1, 1, 0, 0}, {2, 1, 0, 0}, {-1, 0, 1, 11}});
+
+    assert(B.erase({1, 5, 6}));
+    assert(B.size() == 0);
+
+    B.assertFlatChildrenValues({});
+    B.assertFlatNodeValues({{0, 0, 0, 0}});
+    return;
+}
+
+void testInsert() {
+    auto t1 = high_resolution_clock::now();
+
+    SparseMatrix A;
+    A.insert({1, 5, 6}, 11.0);
+
+    assert(A.getValue({1, 5, 6}) == 11.0);
+    assert(A.size() == 1);
+
+    A.assertFlatChildrenValues({{1, 1}, {5, 2}, {6, 3}});
+    A.assertFlatNodeValues({{0, 1, 0, 0}, {1, 1, 0, 0}, {2, 1, 0, 0}, {-1, 0, 1, 11}});
+
+    // first index different
+    A.insert({6, 5, 6}, 13.0);
+
+    assert(A.getValue({1, 5, 6}) == 11.0);
+    assert(A.getValue({6, 5, 6}) == 13.0);
+    assert(A.size() == 2);
+
+    A.assertFlatChildrenValues({{1, 1}, {6, 4}, {5, 2}, {6, 3}, {5, 5}, {6, 6}});
+    A.assertFlatNodeValues({{0, 2, 0, 0},
+                            {2, 1, 0, 0},
+                            {3, 1, 0, 0},
+                            {-1, 0, 1, 11},
+                            {4, 1, 0, 0},
+                            {5, 1, 0, 0},
+                            {-1, 0, 1, 13}});
+
+    // first index between first indices 1,6=>4
+    A.insert({4, 5, 6}, 133.0);
+
+    assert(A.getValue({1, 5, 6}) == 11.0);
+    assert(A.getValue({6, 5, 6}) == 13.0);
+    assert(A.getValue({4, 5, 6}) == 133.0);
+    assert(A.size() == 3);
+
+    A.assertFlatChildrenValues(
+        {{1, 1}, {4, 7}, {6, 4}, {5, 2}, {6, 3}, {5, 5}, {6, 6}, {5, 8}, {6, 9}});
+    A.assertFlatNodeValues({{0, 3, 0, 0},
+                            {3, 1, 0, 0},
+                            {4, 1, 0, 0},
+                            {-1, 0, 1, 11},
+                            {5, 1, 0, 0},
+                            {6, 1, 0, 0},
+                            {-1, 0, 1, 13},
+                            {7, 1, 0, 0},
+                            {8, 1, 0, 0},
+                            {-1, 0, 1, 133}});
+
+    A.insert({5, 5, 6}, 143.0);
+
+    assert(A.getValue({1, 5, 6}) == 11.0);
+    assert(A.getValue({6, 5, 6}) == 13.0);
+    assert(A.getValue({4, 5, 6}) == 133.0);
+    assert(A.getValue({5, 5, 6}) == 143.0);
+    assert(A.size() == 4);
+
+    A.assertFlatChildrenValues({{1, 1},
+                                {4, 7},
+                                {5, 10},
+                                {6, 4},
+                                {5, 2},
+                                {6, 3},
+                                {5, 5},
+                                {6, 6},
+                                {5, 8},
+                                {6, 9},
+                                {5, 11},
+                                {6, 12}});
+    A.assertFlatNodeValues({{0, 4, 0, 0},
+                            {4, 1, 0, 0},
+                            {5, 1, 0, 0},
+                            {-1, 0, 1, 11},
+                            {6, 1, 0, 0},
+                            {7, 1, 0, 0},
+                            {-1, 0, 1, 13},
+                            {8, 1, 0, 0},
+                            {9, 1, 0, 0},
+                            {-1, 0, 1, 133},
+                            {10, 1, 0, 0},
+                            {11, 1, 0, 0},
+                            {-1, 0, 1, 143}});
+
+    A.insert({0, 5, 6}, 155.0);
+
+    assert(A.getValue({1, 5, 6}) == 11.0);
+    assert(A.getValue({6, 5, 6}) == 13.0);
+    assert(A.getValue({4, 5, 6}) == 133.0);
+    assert(A.getValue({5, 5, 6}) == 143.0);
+    assert(A.getValue({0, 5, 6}) == 155.0);
+
+    assert(A.size() == 5);
+
+    A.assertFlatChildrenValues({{0, 13},
+                                {1, 1},
+                                {4, 7},
+                                {5, 10},
+                                {6, 4},
+                                {5, 2},
+                                {6, 3},
+                                {5, 5},
+                                {6, 6},
+                                {5, 8},
+                                {6, 9},
+                                {5, 11},
+                                {6, 12},
+                                {5, 14},
+                                {6, 15}});
+    A.assertFlatNodeValues({{0, 5, 0, 0},
+                            {5, 1, 0, 0},
+                            {6, 1, 0, 0},
+                            {-1, 0, 1, 11},
+                            {7, 1, 0, 0},
+                            {8, 1, 0, 0},
+                            {-1, 0, 1, 13},
+                            {9, 1, 0, 0},
+                            {10, 1, 0, 0},
+                            {-1, 0, 1, 133},
+                            {11, 1, 0, 0},
+                            {12, 1, 0, 0},
+                            {-1, 0, 1, 143},
+                            {13, 1, 0, 0},
+                            {14, 1, 0, 0},
+                            {-1, 0, 1, 155}});
+
+    // First Index Match, Second Lower
+    SparseMatrix B;
+    B.insert({1, 5, 6}, 11.0);
+    B.insert({6, 5, 6}, 13.0);
+    B.insert({4, 5, 6}, 133.0);
+    B.insert({1, 4, 7}, 2);
+
+    assert(B.getValue({1, 5, 6}) == 11.0);
+    assert(B.getValue({6, 5, 6}) == 13.0);
+    assert(B.getValue({4, 5, 6}) == 133.0);
+    assert(B.getValue({1, 4, 7}) == 2.0);
+    assert(B.size() == 4);
+
+    B.assertFlatChildrenValues(
+        {{1, 1}, {4, 7}, {6, 4}, {4, 10}, {5, 2}, {6, 3}, {5, 5}, {6, 6}, {5, 8}, {6, 9}, {7, 11}});
+    B.assertFlatNodeValues({{0, 3, 0, 0},
+                            {3, 2, 0, 0},
+                            {5, 1, 0, 0},
+                            {-1, 0, 1, 11},
+                            {6, 1, 0, 0},
+                            {7, 1, 0, 0},
+                            {-1, 0, 1, 13},
+                            {8, 1, 0, 0},
+                            {9, 1, 0, 0},
+                            {-1, 0, 1, 133},
+                            {10, 1, 0, 0},
+                            {-1, 0, 1, 2}});
+
+    B.insert({1, 10, 7}, 7);
+
+    assert(B.getValue({1, 5, 6}) == 11.0);
+    assert(B.getValue({6, 5, 6}) == 13.0);
+    assert(B.getValue({4, 5, 6}) == 133.0);
+    assert(B.getValue({1, 4, 7}) == 2.0);
+    assert(B.getValue({1, 10, 7}) == 7.0);
+    assert(B.size() == 5);
+
+    B.assertFlatChildrenValues({{1, 1},
+                                {4, 7},
+                                {6, 4},
+                                {4, 10},
+                                {5, 2},
+                                {10, 12},
+                                {6, 3},
+                                {5, 5},
+                                {6, 6},
+                                {5, 8},
+                                {6, 9},
+                                {7, 11},
+                                {7, 13}});
+    B.assertFlatNodeValues({{0, 3, 0, 0},
+                            {3, 3, 0, 0},
+                            {6, 1, 0, 0},
+                            {-1, 0, 1, 11},
+                            {7, 1, 0, 0},
+                            {8, 1, 0, 0},
+                            {-1, 0, 1, 13},
+                            {9, 1, 0, 0},
+                            {10, 1, 0, 0},
+                            {-1, 0, 1, 133},
+                            {11, 1, 0, 0},
+                            {-1, 0, 1, 2},
+                            {12, 1, 0, 0},
+                            {-1, 0, 1, 7}});
+
+    B.insert({1, 7, 7}, 18);
+
+    assert(B.getValue({1, 5, 6}) == 11.0);
+    assert(B.getValue({6, 5, 6}) == 13.0);
+    assert(B.getValue({4, 5, 6}) == 133.0);
+    assert(B.getValue({1, 4, 7}) == 2.0);
+    assert(B.getValue({1, 10, 7}) == 7.0);
+    assert(B.getValue({1, 7, 7}) == 18.0);
+    assert(B.size() == 6);
+
+    B.assertFlatChildrenValues({{1, 1},
+                                {4, 7},
+                                {6, 4},
+                                {4, 10},
+                                {5, 2},
+                                {7, 14},
+                                {10, 12},
+                                {6, 3},
+                                {5, 5},
+                                {6, 6},
+                                {5, 8},
+                                {6, 9},
+                                {7, 11},
+                                {7, 13},
+                                {7, 15}});
+    B.assertFlatNodeValues({{0, 3, 0, 0},
+                            {3, 4, 0, 0},
+                            {7, 1, 0, 0},
+                            {-1, 0, 1, 11},
+                            {8, 1, 0, 0},
+                            {9, 1, 0, 0},
+                            {-1, 0, 1, 13},
+                            {10, 1, 0, 0},
+                            {11, 1, 0, 0},
+                            {-1, 0, 1, 133},
+                            {12, 1, 0, 0},
+                            {-1, 0, 1, 2},
+                            {13, 1, 0, 0},
+                            {-1, 0, 1, 7},
+                            {14, 1, 0, 0},
+                            {-1, 0, 1, 18}});
+
+    // First two Indices Match
+    SparseMatrix C;
+    C.insert({1, 5, 6}, 11.0);
+    C.insert({6, 5, 6}, 13.0);
+    C.insert({4, 5, 6}, 133.0);
+    C.insert({1, 5, 1}, 2);
+
+    assert(C.getValue({1, 5, 6}) == 11.0);
+    assert(C.getValue({6, 5, 6}) == 13.0);
+    assert(C.getValue({4, 5, 6}) == 133.0);
+    assert(C.getValue({1, 5, 1}) == 2.0);
+    assert(C.size() == 4);
+
+    C.assertFlatChildrenValues(
+        {{1, 1}, {4, 7}, {6, 4}, {5, 2}, {1, 10}, {6, 3}, {5, 5}, {6, 6}, {5, 8}, {6, 9}});
+    C.assertFlatNodeValues({{0, 3, 0, 0},
+                            {3, 1, 0, 0},
+                            {4, 2, 0, 0},
+                            {-1, 0, 1, 11},
+                            {6, 1, 0, 0},
+                            {7, 1, 0, 0},
+                            {-1, 0, 1, 13},
+                            {8, 1, 0, 0},
+                            {9, 1, 0, 0},
+                            {-1, 0, 1, 133},
+                            {-1, 0, 1, 2}});
+
+    // First two Indices Match and 3rd is Larger
+    C.insert({1, 5, 10}, 22);
+
+    assert(C.getValue({1, 5, 6}) == 11.0);
+    assert(C.getValue({6, 5, 6}) == 13.0);
+    assert(C.getValue({4, 5, 6}) == 133.0);
+    assert(C.getValue({1, 5, 1}) == 2.0);
+    assert(C.getValue({1, 5, 10}) == 22.0);
+    assert(C.size() == 5);
+
+    C.assertFlatChildrenValues({{1, 1},
+                                {4, 7},
+                                {6, 4},
+                                {5, 2},
+                                {1, 10},
+                                {6, 3},
+                                {10, 11},
+                                {5, 5},
+                                {6, 6},
+                                {5, 8},
+                                {6, 9}});
+    C.assertFlatNodeValues({{0, 3, 0, 0},
+                            {3, 1, 0, 0},
+                            {4, 3, 0, 0},
+                            {-1, 0, 1, 11},
+                            {7, 1, 0, 0},
+                            {8, 1, 0, 0},
+                            {-1, 0, 1, 13},
+                            {9, 1, 0, 0},
+                            {10, 1, 0, 0},
+                            {-1, 0, 1, 133},
+                            {-1, 0, 1, 2},
+                            {-1, 0, 1, 22}});
+
+    C.insert({1, 5, 7}, 33);
+
+    assert(C.getValue({1, 5, 6}) == 11.0);
+    assert(C.getValue({6, 5, 6}) == 13.0);
+    assert(C.getValue({4, 5, 6}) == 133.0);
+    assert(C.getValue({1, 5, 1}) == 2.0);
+    assert(C.getValue({1, 5, 10}) == 22.0);
+    assert(C.getValue({1, 5, 7}) == 33.0);
+    assert(C.size() == 6);
+
+    C.assertFlatChildrenValues({{1, 1},
+                                {4, 7},
+                                {6, 4},
+                                {5, 2},
+                                {1, 10},
+                                {6, 3},
+                                {7, 12},
+                                {10, 11},
+                                {5, 5},
+                                {6, 6},
+                                {5, 8},
+                                {6, 9}});
+    C.assertFlatNodeValues({{0, 3, 0, 0},
+                            {3, 1, 0, 0},
+                            {4, 4, 0, 0},
+                            {-1, 0, 1, 11},
+                            {8, 1, 0, 0},
+                            {9, 1, 0, 0},
+                            {-1, 0, 1, 13},
+                            {10, 1, 0, 0},
+                            {11, 1, 0, 0},
+                            {-1, 0, 1, 133},
+                            {-1, 0, 1, 2},
+                            {-1, 0, 1, 22},
+                            {-1, 0, 1, 33}});
+
+    // Auxiliary
+
+    SparseMatrix D;
+    D.insert({1, 5, 6}, 11.0);
+    D.insert({6, 5, 6}, 13.0);
+    D.insert({4, 5, 6}, 133.0);
+    D.insert({1, 5, 1}, 2);
+    D.insert({1, 5, 10}, 22.0);
+    D.insert({1, 5, 7}, 33);
+
+    assert(D.getValue({1, 5, 6}) == 11.0);
+    assert(D.getValue({6, 5, 6}) == 13.0);
+    assert(D.getValue({4, 5, 6}) == 133.0);
+    assert(D.getValue({1, 5, 10}) == 22.0);
+    assert(D.getValue({1, 5, 7}) == 33.0);
+    assert(D.getValue({1, 5, 1}) == 2.0);
+
+    assert(D.size() == 6);
+
+    D.assertFlatChildrenValues({{1, 1},
+                                {4, 7},
+                                {6, 4},
+                                {5, 2},
+                                {1, 10},
+                                {6, 3},
+                                {7, 12},
+                                {10, 11},
+                                {5, 5},
+                                {6, 6},
+                                {5, 8},
+                                {6, 9}});
+    D.assertFlatNodeValues({{0, 3, 0, 0},
+                            {3, 1, 0, 0},
+                            {4, 4, 0, 0},
+                            {-1, 0, 1, 11},
+                            {8, 1, 0, 0},
+                            {9, 1, 0, 0},
+                            {-1, 0, 1, 13},
+                            {10, 1, 0, 0},
+                            {11, 1, 0, 0},
+                            {-1, 0, 1, 133},
+                            {-1, 0, 1, 2},
+                            {-1, 0, 1, 22},
+                            {-1, 0, 1, 33}});
+
+    D.insert({2, 2, 2}, 66);
+
+    assert(D.getValue({1, 5, 6}) == 11.0);
+    assert(D.getValue({6, 5, 6}) == 13.0);
+    assert(D.getValue({4, 5, 6}) == 133.0);
+    assert(D.getValue({1, 5, 10}) == 22.0);
+    assert(D.getValue({1, 5, 7}) == 33.0);
+    assert(D.getValue({1, 5, 1}) == 2.0);
+    assert(D.getValue({2, 2, 2}) == 66.0);
+
+    assert(D.size() == 7);
+
+    D.assertFlatChildrenValues({{1, 1},
+                                {2, 13},
+                                {4, 7},
+                                {6, 4},
+                                {5, 2},
+                                {1, 10},
+                                {6, 3},
+                                {7, 12},
+                                {10, 11},
+                                {5, 5},
+                                {6, 6},
+                                {5, 8},
+                                {6, 9},
+                                {2, 14},
+                                {2, 15}});
+    D.assertFlatNodeValues({{0, 4, 0, 0},
+                            {4, 1, 0, 0},
+                            {5, 4, 0, 0},
+                            {-1, 0, 1, 11},
+                            {9, 1, 0, 0},
+                            {10, 1, 0, 0},
+                            {-1, 0, 1, 13},
+                            {11, 1, 0, 0},
+                            {12, 1, 0, 0},
+                            {-1, 0, 1, 133},
+                            {-1, 0, 1, 2},
+                            {-1, 0, 1, 22},
+                            {-1, 0, 1, 33},
+                            {13, 1, 0, 0},
+                            {14, 1, 0, 0},
+                            {-1, 0, 1, 66}});
+
+    SparseMatrix K;
+    int items = 0;
+    for (int i = 0; i < 10000;) {
+        for (int j = 0; j < 10000;) {
+            for (int k = 0; k < 10900;) {
+                K.insert({i, j, k}, 1);
+                j += 11;
+                k += 13;
+                items++;
+            }
+        }
+        i += 100;
+    }
+
+    int overriden = 0;
+    for (int i = 0; i < 1000;) {
+        for (int j = 0; j < 1009;) {
+            for (int k = 0; k < 109;) {
+                int old = (int)K.getValue({i, j, k});
+                if (old == 0) {
+                    items++;
+                } else {
+                    overriden++;
+                }
+                K.insert({i, j, k}, 2);
+                j += 11;
+                k += 13;
+            }
+        }
+        i += 1;
+    }
+    assert(K.size() == items);
+
+    auto t2 = high_resolution_clock::now();
+    auto ms_int = duration_cast<milliseconds>(t2 - t1);
+
+    duration<double, std::milli> ms_double = t2 - t1;
+    std::cout << ms_int.count() << "ms\n";
+    std::cout << ms_double.count() << "ms\n";
+    std::cout << "Inserted " << items << " items." << std::endl;
+    std::cout << "Overriden " << overriden << " items." << std::endl;
+}

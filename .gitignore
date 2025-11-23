@@ -1,3 +1,4 @@
+
 # Prerequisites
 *.d
 
@@ -42,3 +43,10 @@
 
 # precompiled headers
 *.h.gch
+
+SparseMatrix/x64
+SparseMatrix/x64/*
+*.obj
+*.pub
+x64/*
+
