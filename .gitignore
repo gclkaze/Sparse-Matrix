@@ -1,2 +1,5 @@
 SparseMatrix/x64
 SparseMatrix/x64/*
+*.obj
+*.pub
+x64/*
