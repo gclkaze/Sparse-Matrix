@@ -1,9 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <CudaCompile Include="kernel.cu" />
     <CudaCompile Include="SparseMatrix\Strategies\Multiplication\GPUMultiplicationKernel.cu">
       <Filter>SparseMatrix\SparseMatrix\Strategies\Multiplication</Filter>
+    </CudaCompile>
+    <CudaCompile Include="MultiplicationKernel.cu">
+      <Filter>SparseMatrix\GPUSparseMatrix</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
@@ -76,7 +78,6 @@
       <Filter>SparseMatrix\SparseMatrix\Strategies\Multiplication</Filter>
     </ClInclude>
     <ClInclude Include="IMatrix.h" />
-    <ClInclude Include="SparseMatrix\Strategies\Multiplication\GPUMultiplicationKernel.h" />
     <ClInclude Include="Intersection.h">
       <Filter>SparseMatrix\GPUSparseMatrix</Filter>
     </ClInclude>
@@ -89,6 +90,7 @@
     <ClInclude Include="ITupleMatrix.h">
       <Filter>SparseMatrix\GPUSparseMatrix</Filter>
     </ClInclude>
+    <ClInclude Include="GPUSparseMatrixIterator.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />

@@ -94,7 +94,6 @@
     <CudaLink />
   </ItemDefinitionGroup>
   <ItemGroup>
-    <CudaCompile Include="kernel.cu" />
     <CudaCompile Include="MultiplicationKernel.cu" />
     <CudaCompile Include="SparseMatrix\Strategies\Multiplication\GPUMultiplicationKernel.cu" />
   </ItemGroup>
@@ -112,7 +111,6 @@
     <ClInclude Include="SparseMatrix\SparseMatrixIterator.h" />
     <ClInclude Include="SparseMatrix\SparseMatrixTuple.h" />
     <ClInclude Include="SparseMatrix\Strategies\Multiplication\BlindlyThreadedTreeMultiplication.h" />
-    <ClInclude Include="SparseMatrix\Strategies\Multiplication\GPUMultiplicationKernel.h" />
     <ClInclude Include="SparseMatrix\Strategies\Multiplication\GPUSparseMultiplication.h" />
     <ClInclude Include="SparseMatrix\Strategies\Multiplication\IMultiplicationStrategy.h" />
     <ClInclude Include="SparseMatrix\Strategies\Multiplication\IndexIntersectionFinder.h" />
