@@ -1,0 +1,102 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CudaCompile Include="kernel.cu" />
+    <CudaCompile Include="SparseMatrix\Strategies\Multiplication\GPUMultiplicationKernel.cu">
+      <Filter>SparseMatrix\SparseMatrix\Strategies\Multiplication</Filter>
+    </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="SparseMatrix">
+      <UniqueIdentifier>{c2abc91c-5d88-4354-8dee-0189ee896efe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SparseMatrix\SparseMatrix">
+      <UniqueIdentifier>{cfcaff38-d4c3-49dd-97f1-9782e38612b1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SparseMatrix\SparseMatrix\Strategies">
+      <UniqueIdentifier>{14584d1d-3639-4561-9c70-3035ca0dab03}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SparseMatrix\SparseMatrix\Strategies\Multiplication">
+      <UniqueIdentifier>{def82c43-ecda-4f64-8298-a649d6a71dad}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SparseMatrix\GPUSparseMatrix">
+      <UniqueIdentifier>{60b245f1-e5b1-4b8a-b19f-b7b78ec9cc1b}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="SparseMatrix\CommonOffset.h">
+      <Filter>SparseMatrix</Filter>
+    </ClInclude>
+    <ClInclude Include="SparseMatrix\FlatIndex.h">
+      <Filter>SparseMatrix</Filter>
+    </ClInclude>
+    <ClInclude Include="SparseMatrix\FlatNode.h">
+      <Filter>SparseMatrix</Filter>
+    </ClInclude>
+    <ClInclude Include="SparseMatrix\ISparseMatrix.h">
+      <Filter>SparseMatrix</Filter>
+    </ClInclude>
+    <ClInclude Include="SparseMatrix\SparseMatrix.h">
+      <Filter>SparseMatrix</Filter>
+    </ClInclude>
+    <ClInclude Include="SparseMatrix\SparseMatrixIterator.h">
+      <Filter>SparseMatrix</Filter>
+    </ClInclude>
+    <ClInclude Include="SparseMatrix\SparseMatrixTuple.h">
+      <Filter>SparseMatrix</Filter>
+    </ClInclude>
+    <ClInclude Include="SparseMatrix\Strategies\Multiplication\BlindlyThreadedTreeMultiplication.h">
+      <Filter>SparseMatrix\SparseMatrix\Strategies\Multiplication</Filter>
+    </ClInclude>
+    <ClInclude Include="SparseMatrix\Strategies\Multiplication\GPUSparseMultiplication.h">
+      <Filter>SparseMatrix\SparseMatrix\Strategies\Multiplication</Filter>
+    </ClInclude>
+    <ClInclude Include="SparseMatrix\Strategies\Multiplication\IMultiplicationStrategy.h">
+      <Filter>SparseMatrix\SparseMatrix\Strategies\Multiplication</Filter>
+    </ClInclude>
+    <ClInclude Include="SparseMatrix\Strategies\Multiplication\IndexIntersectionFinder.h">
+      <Filter>SparseMatrix\SparseMatrix\Strategies\Multiplication</Filter>
+    </ClInclude>
+    <ClInclude Include="SparseMatrix\Strategies\Multiplication\LateComparisonMultiplication.h">
+      <Filter>SparseMatrix\SparseMatrix\Strategies\Multiplication</Filter>
+    </ClInclude>
+    <ClInclude Include="SparseMatrix\Strategies\Multiplication\MultiplicationStrategyFactory.h">
+      <Filter>SparseMatrix\SparseMatrix\Strategies\Multiplication</Filter>
+    </ClInclude>
+    <ClInclude Include="SparseMatrix\Strategies\Multiplication\MultiplicationTypes.h">
+      <Filter>SparseMatrix\SparseMatrix\Strategies\Multiplication</Filter>
+    </ClInclude>
+    <ClInclude Include="SparseMatrix\Strategies\Multiplication\OffsetTreeMultiplication.h">
+      <Filter>SparseMatrix\SparseMatrix\Strategies\Multiplication</Filter>
+    </ClInclude>
+    <ClInclude Include="SparseMatrix\Strategies\Multiplication\RangedTreeThreadedMultiplication.h">
+      <Filter>SparseMatrix\SparseMatrix\Strategies\Multiplication</Filter>
+    </ClInclude>
+    <ClInclude Include="SparseMatrix\Strategies\Multiplication\TupleIteratorMultiplication.h">
+      <Filter>SparseMatrix\SparseMatrix\Strategies\Multiplication</Filter>
+    </ClInclude>
+    <ClInclude Include="IMatrix.h" />
+    <ClInclude Include="SparseMatrix\Strategies\Multiplication\GPUMultiplicationKernel.h" />
+    <ClInclude Include="Intersection.h">
+      <Filter>SparseMatrix\GPUSparseMatrix</Filter>
+    </ClInclude>
+    <ClInclude Include="GlobalMatrixService.h">
+      <Filter>SparseMatrix\GPUSparseMatrix</Filter>
+    </ClInclude>
+    <ClInclude Include="Tuple.h">
+      <Filter>SparseMatrix\GPUSparseMatrix</Filter>
+    </ClInclude>
+    <ClInclude Include="ITupleMatrix.h">
+      <Filter>SparseMatrix\GPUSparseMatrix</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="GPUSparseMatrix.h">
+      <Filter>SparseMatrix\GPUSparseMatrix</Filter>
+    </ClCompile>
+    <ClCompile Include="GlobalMatrixService.cpp">
+      <Filter>SparseMatrix\GPUSparseMatrix</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
